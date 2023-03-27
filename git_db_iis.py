@@ -27,11 +27,11 @@ directory_universi = r'I:\Documenti\File PMC\In Corso\Universi di Dettaglio'
 
 
 
-os.chdir(directory)
+#os.chdir(directory)
 # pil_image = Image.open("immagine_iis.png")
 
 #%%
-os.chdir(directory_universi)
+#os.chdir(directory_universi)
 url = 'https://raw.githubusercontent.com/marzowill96/Monitoraggio_Analisi_Performance/main/dati.xlsx'
 fondi = pd.read_excel(url)
 names = fondi.columns[1:]
@@ -67,7 +67,7 @@ directory_universi = r'I:\Documenti\File PMC\In Corso\Universi di Dettaglio'
  
  
 #%%
-os.chdir(directory_universi)
+#os.chdir(directory_universi)
 fondi = pd.read_excel(url)
 names = fondi.columns[1:]
  
@@ -85,7 +85,7 @@ for key, value in isin_dict_0.items():
     isin_dict[new_key] = new_value
 
 #%%
-os.chdir(directory)
+#os.chdir(directory)
 
 # Define list of dates for dropdown menu
 
@@ -135,7 +135,7 @@ app.index_string = '''
 app.layout = html.Div([
     
     html.Div([
-        html.Img(src=pil_image, style={'width': '750px', 'height': '150px'}),
+        #html.Img(src=pil_image, style={'width': '750px', 'height': '150px'}),
         html.H2('Engineered by Monitoraggio & Analisi Prodotti di Investimento', style={'color': 'black', 'font-style': 'italic', 'font-weight': 'normal','font-size': '18px', 'margin-left': '0px','margin-bottom':'20px'})
         # html.Div([
         #     html.H1('Intelligent Investment Strategy', style={'color': 'blue'}),
