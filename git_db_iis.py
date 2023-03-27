@@ -107,6 +107,7 @@ step_out_df = pd.DataFrame(index=[0], columns=['Step - Out', 'Conteggio'])
 
 app = dash.Dash(__name__, routes_pathname_prefix='/Monitoraggio_Analisi_Performance/IIS/', 
                 title ='Tool IIS')
+server = app.server
 
 # Add the following line to set the favicon
 app.index_string = '''
