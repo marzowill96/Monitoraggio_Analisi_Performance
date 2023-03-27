@@ -68,7 +68,7 @@ directory_universi = r'I:\Documenti\File PMC\In Corso\Universi di Dettaglio'
  
 #%%
 os.chdir(directory_universi)
-fondi = pd.read_excel('par - universo mif ch&tm altre classi.xlsx', sheet_name= 'Quota Pubbl')
+fondi = fondi = pd.read_excel(url)
 names = fondi.columns[1:]
  
  # associo ISIN a Nome Fondo per tutti i fondi
