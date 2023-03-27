@@ -13,7 +13,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output, State
 from dash import dash_table
 import dash_bootstrap_components as dbc
-from PIL import Image
+#from PIL import Image
 
 
 # Get the directory containing the script
@@ -126,7 +126,7 @@ app.index_string = '''
 app.layout = html.Div([
     
     html.Div([
-        html.Img(src=pil_image, style={'width': '750px', 'height': '150px'}),
+        #html.Img(src=pil_image, style={'width': '750px', 'height': '150px'}),
         html.H2('Engineered by Monitoraggio & Analisi Prodotti di Investimento', style={'color': 'black', 'font-style': 'italic', 'font-weight': 'normal','font-size': '18px', 'margin-left': '0px','margin-bottom':'20px'})
         # html.Div([
         #     html.H1('Intelligent Investment Strategy', style={'color': 'blue'}),
