@@ -294,7 +294,66 @@ html.Div(
     
      ])
 
+# Define callbacks
+@app.callback(
+    Output('amount-error', 'children'),
+    Input('importo', 'value')
+)
+def check_amount(amount):
+    if amount is not None and amount < 30000:
+        return 'Minimo investito deve essere almeno €30.000'
 
+@app.callback(
+    Output('installment-amount', 'children'),
+    Input('importo', 'value'),
+    Input('durata_months', 'value')
+)
+def calculate_installment_amount(amount, duration):
+    if amount is not None and duration is not None:
+        installment_amount = round(amount / duration, 2)
+        return f'€{installment_amount}'
+
+@app.callback(
+    Output('output', 'children'),
+    [Input('durata_months', 'value'), Input('installment-amount', 'children'), Input('input1', 'value'), Input('input2', 'value'), Input('input3', 'value')]
+)
+def update_output(durata_months,installment_amount,input1, input2, input3):
+    
+    total = input1 + input2 + input3
+    rata1 = round(float(installment_amount.strip('€')) * float(input1) / 100, 2)
+    rata2 = round(float(installment_amount.strip('€')) * float(input2) / 100, 2)
+    rata3 = round(float(installment_amount.strip('€')) * float(input3) / 100, 2)
+    
+    if (input1<0) or (input2<0) or (input3<0):
+        return html.Div(f'Non sono ammessi valori di ripartizione negativi.', style={'color': 'red'})
+    
+    elif total != 100:
+        return html.Div(f'Il totale della Ripartizione deve essere 100%. Totale: {total}.', style={'color': 'red'})
+
+    elif total != 100:
+        return html.Div(f'Il totale della Ripartizione deve essere 100%. Totale: {total}.', style={'color': 'red'})
+
+    elif (rata1*durata_months <15000) or (rata2*durata_months <15000) or (rata3*durata_months <15000):
+        return html.Div(f'La ripartizione non permette di rispettare i minimi contrattuali', style={'color': 'red'})
+
+    else:
+        return html.Div(f'Totale = 100.', style={'color': 'green'})
+
+
+@app.callback(
+    [Output('rata1', 'children'), Output('rata2', 'children'), Output('rata3', 'children')],
+    [Input('installment-amount', 'children'), Input('input1', 'value'), Input('input2', 'value'), Input('input3', 'value')]
+)
+def calculate_rata(installment_amount, input1, input2, input3):
+    if installment_amount is not None:
+
+        rata1 = round(float(installment_amount.strip('€')) * float(input1) / 100, 2)
+        rata2 = round(float(installment_amount.strip('€')) * float(input2) / 100, 2)
+        rata3 = round(float(installment_amount.strip('€')) * float(input3) / 100, 2)
+        return f'€{rata1}', f'€{rata2}', f'€{rata3}'
+    else:
+        return None, None, None
+    
 # Run the app
 if __name__ == '__main__':
     app.run_server(debug=False)
