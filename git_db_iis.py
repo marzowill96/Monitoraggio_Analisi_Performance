@@ -16,7 +16,7 @@ import dash_bootstrap_components as dbc
 #from PIL import Image
 
 
-
+df = pd.read_excel('https://raw.githubusercontent.com/marzowill96/Monitoraggio_Analisi_Performance/main/dati.xlsx')
 
 #%%
 
@@ -33,6 +33,14 @@ app.layout = html.Div([
 
     ],style={'margin': 'auto','marginLeft': '200px','display': 'flex', 'align-items': 'flex-end'})
     
+    html.Div([
+    dcc.Graph(id='table',
+              figure=dict(data=[dict(type='table',
+                                     header=dict(values=list(df.columns)),
+                                     cells=dict(values=[df[col] for col in df.columns]))
+                                 ])
+             )
+])
 ])
 
 
