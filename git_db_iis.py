@@ -15,6 +15,7 @@ from dash import dash_table
 import dash_bootstrap_components as dbc
 from PIL import Image
 from io import BytesIO
+import requests
 
 url = 'https://raw.githubusercontent.com/marzowill96/Monitoraggio_Analisi_Performance/main/'
 
