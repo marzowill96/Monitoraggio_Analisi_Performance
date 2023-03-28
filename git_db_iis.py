@@ -114,15 +114,12 @@ server = app.server
 app.layout = html.Div([
     
     html.Div([
-        #html.Img(src=pil_image, style={'width': '750px', 'height': '150px'}),
+        
         html.H2('Engineered by Monitoraggio & Analisi Prodotti di Investimento', style={'color': 'black', 'font-style': 'italic', 'font-weight': 'normal','font-size': '18px', 'margin-left': '0px','margin-bottom':'20px'})
-        # html.Div([
-        #     html.H1('Intelligent Investment Strategy', style={'color': 'blue'}),
-        #     html.H2('Engineered by Monitoraggio & Analisi Prodotti di Investimento', style={'color': 'black', 'font-weight': 'normal', 'font-size': '18px', 'margin-left': '10px'})
-        # ], style={'display': 'flex', 'align-items': 'center'})
-    ],style={'margin': 'auto','marginLeft': '200px','display': 'flex', 'align-items': 'flex-end'}),
+
+    ],style={'margin': 'auto','marginLeft': '200px','display': 'flex', 'align-items': 'flex-end'})
     
-  
+])
 
 
 # Run the app
