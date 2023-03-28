@@ -15,8 +15,8 @@ from dash import dash_table
 import dash_bootstrap_components as dbc
 from PIL import Image
 
-pil_image = Image.open("https://raw.githubusercontent.com/marzowill96/Monitoraggio_Analisi_Performance/main/immagine_iis.png")
-url = 'https://raw.githubusercontent.com/marzowill96/Monitoraggio_Analisi_Performance/main/dati.xlsx'
+url = 'https://raw.githubusercontent.com/marzowill96/Monitoraggio_Analisi_Performance/main/'
+pil_image = Image.open(url+'immagine_iis.png')
 fondi = pd.read_excel(url)
 names = fondi.columns[1:]
 
