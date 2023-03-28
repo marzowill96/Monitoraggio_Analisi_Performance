@@ -353,6 +353,478 @@ def calculate_rata(installment_amount, input1, input2, input3):
         return f'€{rata1}', f'€{rata2}', f'€{rata3}'
     else:
         return None, None, None
+
+@app.callback(
+    [Output('grafico_iis', 'figure'),
+     Output('istogramma', 'figure'),
+     Output('performance', 'data'),
+     Output('volatilita', 'data'),
+     Output('max_dd', 'data'),
+     Output('step_in', 'data'),
+     Output('step_out', 'data'),
+     Output('pmc1', 'figure'),
+     Output('pmc2', 'figure'),
+     Output('pmc3', 'figure')],
+    [Input('start_date', 'value'),
+     Input('importo', 'value'),
+     Input('durata_months', 'value'),
+     Input('fondo1', 'value'),
+     Input('fondo2', 'value'),
+     Input('fondo3', 'value'),
+     Input('input1', 'value'),
+     Input('input2', 'value'),
+     Input('input3', 'value'),
+     Input('step_out1', 'value'),
+     Input('step_out2', 'value'),
+     Input('step_out3', 'value')
+     ]
+)
+
+def motore(start_date, importo, durata_months, fondo1, fondo2, fondo3, input1, input2, input3, step_out1, step_out2, step_out3):
+
+  
+ 
+    if start_date is not None and importo is not None and durata_months is not None and fondo1 is not None and fondo2 is not None and fondo3 is not None and input1 is not None and input2 is not None and input3 is not None and step_out1 is not None and step_out2 is not None and step_out3:
+        
+       
+
+        #%%     
+        if step_out1 == '-':
+            step_out1 = '%0'
+        
+        if step_out2 == '-':
+            step_out2 = '%0'     
+            
+        if step_out3 == '-':
+            step_out3 = '%0'            
+        
+        chosen_date = start_date
+        start_date = dt.strptime(start_date, '%d/%m/%Y')
+        
+        
+        # fondo1 = get_key_by_value(names_dict, fondo1)
+        # fondo2 = get_key_by_value(names_dict, fondo2)
+        # fondo3 = get_key_by_value(names_dict, fondo3)
+        
+        selected_funds = [isin_dict[c] for c in [fondo1, fondo2, fondo3]]# [fondo1, fondo2, fondo3]
+        ripartizione = {selected_funds[0]: input1/100,  selected_funds[1]: input2/100, selected_funds[2]:input3/100} #scegliere ripartizione tra i 3 fondi scelti 
+        soglia_step_out = {selected_funds[0]: float(step_out1.strip('%'))/100,  selected_funds[1]: float(step_out2.strip('%'))/100, selected_funds[2]: float(step_out3.strip('%'))/100}
+        importo_rata_tot = round(importo/durata_months,2) #dipende dalla durata scelta
+
+#%% POSSIBILITA' DI SCEGLIERE MENO DI 3 FONDI
+        
+
+        # if any(x is None or math.isnan(x) for x in selected_funds):
+        #     selected_funds = [x for x in selected_funds if x is not None and not math.isnan(x)]
+        
+        
+        #%% dipende da start_date
+        date_list  = []
+        date_list.append(start_date)
+
+        while date_list[-1] < base_dati_weekly.index[-1]:
+            date_list.append(date_list[-1] + relativedelta(months=+1))
+
+
+        # creo il dataframe dinamico in base alla selezione dei fondi
+
+        dati_calcolo = pd.DataFrame(index = date_list, columns = base_dati_weekly.columns)
+        dati_calcolo[dati_calcolo.columns] = base_dati_weekly[dati_calcolo.columns]
+
+        funds_e_liq = selected_funds.copy()
+        funds_e_liq.append('IE0030608859') 
+        dati_calcolo = dati_calcolo[funds_e_liq]
+
+        # get the indices of rows that contain NaN values
+        nan_rows = dati_calcolo[dati_calcolo.isna().any(axis=1)].index
+
+        for n in nan_rows:
+            for c in dati_calcolo.columns:
+                dati_calcolo[c].loc[n] = base_dati[c].loc[base_dati.index[base_dati.index.get_loc(n, method='ffill')]]
+
+        dati_calcolo = dati_calcolo[dati_calcolo.index < base_dati_weekly.index[-1]]
+
+        # creo n dataframe a seconda dei fondi scelti (max3)
+
+        calcolo_dict = {c : {} for c in selected_funds}
+        calcolo_dict['TOTALI'] = pd.DataFrame(index = dati_calcolo.index, columns = ['CTV Fondi', 'Tot Rata ' + selected_funds[0], 'Tot Rata ' + selected_funds[1], 'Tot Rata ' + selected_funds[2]])
+        calcolo_dict['MBB Euro Fixed Income LA'] = dati_calcolo['IE0030608859']
+        calcolo_dict['Fondi Azionari'] = pd.DataFrame(index = dati_calcolo.index, columns= ['Fondi Azionari', 'MBB Euro Fixed Income', 'CTV Totale', 'Flussi Step-In', 'Flussi Step-Out', 'Rata Base'])
+
+        #%%
+        for c in selected_funds:
+            
+            calcolo_dict[c]['df'] = pd.DataFrame(index = dati_calcolo.index, columns=['QUOTA', 'RATA','RADDOPPIA_RATA'])
+            calcolo_dict[c]['df']['QUOTA'] = dati_calcolo[c]                                 
+            calcolo_dict[c]['Ripartizione'] = ripartizione[c]
+            calcolo_dict[c]['Soglia_step_out'] = soglia_step_out[c]
+            calcolo_dict[c]['Importo rata'] = calcolo_dict[c]['Ripartizione'] * importo / durata_months
+            calcolo_dict[c]['Fondo liquidità'] = pd.DataFrame(index = dati_calcolo.index, columns=['Liquidità'])
+            calcolo_dict[c]['NOME FONDO'] = names_dict[c]
+        #1.54    
+            if calcolo_dict[c]['Importo rata'] != 0:
+                calcolo_dict[c]['1.54'] = 1.54
+            else:
+                calcolo_dict[c]['1.54'] = 0
+                
+            
+            
+            calcolo_dict[c]['df']['RADDOPPIA_RATA'].iloc[0] = 1
+            calcolo_dict[c]['df']['RATA'].iloc[0] = calcolo_dict[c]['Importo rata'] - calcolo_dict[c]['1.54'] * calcolo_dict[c]['df']['RADDOPPIA_RATA'].iloc[0]  
+            
+                
+            
+                
+            calcolo_dict[c]['df']['PMC'] = np.nan
+            calcolo_dict[c]['df']['N_QUOTE'] = np.nan
+            calcolo_dict[c]['df']['CTV_AZIONARIO'] = np.nan
+            calcolo_dict[c]['df']['DEN_CONSOLIDA'] = np.nan
+            calcolo_dict[c]['df']['CONSOLIDA_LORDA'] = np.nan
+            calcolo_dict[c]['df']['CONSOLIDA_NETTA'] = np.nan
+            calcolo_dict[c]['df']['CONSOLIDA_EFF'] = np.nan
+            
+            calcolo_dict[c]['df']['PMC'].iloc[0] = calcolo_dict[c]['df']['QUOTA'].iloc[0]
+            calcolo_dict[c]['df']['DEN_CONSOLIDA'].iloc[0] = calcolo_dict[c]['df']['PMC'].iloc[0]
+            calcolo_dict[c]['df']['N_QUOTE'].iloc[0] = calcolo_dict[c]['df']['RATA'].iloc[0] / calcolo_dict[c]['df']['QUOTA'].iloc[0]
+            calcolo_dict[c]['df']['CONSOLIDA_LORDA'].iloc[0] = 0
+            calcolo_dict[c]['df']['CONSOLIDA_NETTA'].iloc[0] = 0
+            calcolo_dict[c]['df']['CONSOLIDA_EFF'].iloc[0] = 0
+            calcolo_dict[c]['df']['CTV_AZIONARIO'].iloc[0] = calcolo_dict[c]['df']['RATA'].iloc[0] - calcolo_dict[c]['df']['CONSOLIDA_LORDA'].iloc[0]
+            calcolo_dict['TOTALI']['Tot Rata ' + c].iloc[0] = - calcolo_dict[c]['df']['RATA'].iloc[0] - calcolo_dict[c]['1.54']
+
+        #%%    QUESTI FUORI DAL LOOP (FONDO_LIQUIDITà E TOTALE CTV FONDI)
+               
+        calcolo_dict[selected_funds[0]]['Fondo liquidità'].iloc[0] = importo         
+        calcolo_dict[selected_funds[1]]['Fondo liquidità'].iloc[0] = calcolo_dict[selected_funds[0]]['Fondo liquidità'].iloc[0] + calcolo_dict['TOTALI']['Tot Rata ' + selected_funds[0]].iloc[0] + sum([calcolo_dict[selected_funds[0]]['df']['CONSOLIDA_NETTA'].iloc[0], calcolo_dict[selected_funds[1]]['df']['CONSOLIDA_NETTA'].iloc[0], calcolo_dict[selected_funds[2]]['df']['CONSOLIDA_NETTA'].iloc[0]])           
+        calcolo_dict[selected_funds[2]]['Fondo liquidità'].iloc[0] = calcolo_dict[selected_funds[1]]['Fondo liquidità'].iloc[0] + calcolo_dict['TOTALI']['Tot Rata ' + selected_funds[1]].iloc[0]
+
+
+        calcolo_dict['TOTALI']['CTV Fondi'].iloc[0] =  calcolo_dict[selected_funds[0]]['df']['CTV_AZIONARIO'].iloc[0] + calcolo_dict[selected_funds[1]]['df']['CTV_AZIONARIO'].iloc[0] + calcolo_dict[selected_funds[2]]['df']['CTV_AZIONARIO'].iloc[0]
+                
+        #%%
+        for r in range(1,len(calcolo_dict[c]['df'])):
+            # 
+            
+        ########################################################################################################################################################################    
+            for c in selected_funds:            
+            
+                
+        # RADDOPPIA_RATA     
+                if calcolo_dict[c]['df'].index[r] <=  start_date + relativedelta(months= + durata_months):
+                    if (((calcolo_dict[c]['df']['QUOTA'].iloc[r] / calcolo_dict[c]['df']['PMC'].iloc[r-1] -1) <= -0.05) & ((calcolo_dict[c]['df']['QUOTA'].iloc[r] / calcolo_dict[c]['df']['PMC'].iloc[r-1] -1) > -0.1)):
+                        calcolo_dict[c]['df']['RADDOPPIA_RATA'].iloc[r] = 2
+                        
+                    elif (((calcolo_dict[c]['df']['QUOTA'].iloc[r] / calcolo_dict[c]['df']['PMC'].iloc[r-1] -1) <= -0.1) & ((calcolo_dict[c]['df']['QUOTA'].iloc[r] / calcolo_dict[c]['df']['PMC'].iloc[r-1] -1) > -0.15)):
+                        calcolo_dict[c]['df']['RADDOPPIA_RATA'].iloc[r] = 3
+                        
+                    elif (((calcolo_dict[c]['df']['QUOTA'].iloc[r] / calcolo_dict[c]['df']['PMC'].iloc[r-1] -1) <= -0.15) & ((calcolo_dict[c]['df']['QUOTA'].iloc[r] / calcolo_dict[c]['df']['PMC'].iloc[r-1] -1) > -0.2)):
+                        calcolo_dict[c]['df']['RADDOPPIA_RATA'].iloc[r] = 4
+                        
+                    elif ((calcolo_dict[c]['df']['QUOTA'].iloc[r] / calcolo_dict[c]['df']['PMC'].iloc[r-1] -1) <= -0.2):
+                        calcolo_dict[c]['df']['RADDOPPIA_RATA'].iloc[r] = 5
+                        
+                    else:
+                        calcolo_dict[c]['df']['RADDOPPIA_RATA'].iloc[r] = 1
+         
+        #FONDO LIQUIDITA       
+                if r==1:
+                    if c == selected_funds[0]:
+                        calcolo_dict[c]['Fondo liquidità'].iloc[r] = calcolo_dict[selected_funds[2]]['Fondo liquidità'].iloc[r-1][0] + calcolo_dict['TOTALI']['Tot Rata ' + selected_funds[2]].iloc[r-1]
+                    elif c == selected_funds[1]:                 
+                        calcolo_dict[selected_funds[1]]['Fondo liquidità'].iloc[r] = calcolo_dict[selected_funds[0]]['Fondo liquidità'].iloc[r][0] * (calcolo_dict['MBB Euro Fixed Income LA'].iloc[r] / calcolo_dict['MBB Euro Fixed Income LA'].iloc[r-1]) + calcolo_dict['TOTALI']['Tot Rata ' + selected_funds[0]].iloc[r] + calcolo_dict[selected_funds[0]]['df']['CONSOLIDA_NETTA'].iloc[r]
+                    elif c == selected_funds[2]: 
+                        calcolo_dict[selected_funds[2]]['Fondo liquidità'].iloc[r] = calcolo_dict[selected_funds[1]]['Fondo liquidità'].iloc[r][0] + calcolo_dict['TOTALI']['Tot Rata ' + selected_funds[1]].iloc[r] + calcolo_dict[selected_funds[1]]['df']['CONSOLIDA_NETTA'].iloc[r]
+                
+                else:
+                    if c == selected_funds[0]:
+                        calcolo_dict[selected_funds[0]]['Fondo liquidità'].iloc[r] = calcolo_dict[selected_funds[2]]['Fondo liquidità'].iloc[r-1][0] + calcolo_dict['TOTALI']['Tot Rata ' + selected_funds[2]].iloc[r-1] + calcolo_dict[selected_funds[2]]['df']['CONSOLIDA_NETTA'].iloc[r-1]
+                    elif c == selected_funds[1]:
+                        calcolo_dict[selected_funds[1]]['Fondo liquidità'].iloc[r] = calcolo_dict[selected_funds[0]]['Fondo liquidità'].iloc[r][0] * (calcolo_dict['MBB Euro Fixed Income LA'].iloc[r] / calcolo_dict['MBB Euro Fixed Income LA'].iloc[r-1]) + calcolo_dict['TOTALI']['Tot Rata ' + selected_funds[0]].iloc[r] + calcolo_dict[selected_funds[0]]['df']['CONSOLIDA_NETTA'].iloc[r]
+                    elif c == selected_funds[2]:
+                        calcolo_dict[selected_funds[2]]['Fondo liquidità'].iloc[r] = calcolo_dict[selected_funds[1]]['Fondo liquidità'].iloc[r][0] + calcolo_dict['TOTALI']['Tot Rata ' + selected_funds[1]].iloc[r] + calcolo_dict[selected_funds[1]]['df']['CONSOLIDA_NETTA'].iloc[r]
+
+
+              
+        # RATA
+                if c == selected_funds[0]:
+                    
+                    if (calcolo_dict[c]['Importo rata'] * calcolo_dict[c]['df']['RADDOPPIA_RATA'].iloc[r] - calcolo_dict[c]['1.54']) < calcolo_dict[c]['Fondo liquidità'].iloc[r][0]:            
+                        calcolo_dict[c]['df']['RATA'].iloc[r] = calcolo_dict[c]['Importo rata'] * calcolo_dict[c]['df']['RADDOPPIA_RATA'].iloc[r] - calcolo_dict[c]['1.54']
+                        
+                    elif (calcolo_dict[c]['Fondo liquidità'].iloc[r] * calcolo_dict['MBB Euro Fixed Income LA'].iloc[r] / calcolo_dict['MBB Euro Fixed Income LA'].iloc[r-1])[0] <= 250:
+                        calcolo_dict[c]['df']['RATA'].iloc[r] = 0
+                    
+                    else:
+                        calcolo_dict[c]['df']['RATA'].iloc[r] = calcolo_dict[c]['Fondo liquidità'].iloc[r][0] * calcolo_dict['MBB Euro Fixed Income LA'].iloc[r] / calcolo_dict['MBB Euro Fixed Income LA'].iloc[r-1] - calcolo_dict[c]['1.54']
+                
+                else:
+                    if (calcolo_dict[c]['Importo rata'] * calcolo_dict[c]['df']['RADDOPPIA_RATA'].iloc[r] - calcolo_dict[c]['1.54']) < calcolo_dict[c]['Fondo liquidità'].iloc[r][0]:
+                        calcolo_dict[c]['df']['RATA'].iloc[r] = calcolo_dict[c]['Importo rata'] * calcolo_dict[c]['df']['RADDOPPIA_RATA'].iloc[r] - calcolo_dict[c]['1.54']
+                    
+                    elif calcolo_dict[c]['Fondo liquidità'].iloc[r][0] <= 250:
+                        calcolo_dict[c]['df']['RATA'].iloc[r] = 0
+                
+                    else:
+                        calcolo_dict[c]['df']['RATA'].iloc[r] = calcolo_dict[c]['Fondo liquidità'].iloc[r][0] - calcolo_dict[c]['1.54']
+
+                
+        # N_QUOTE
+                if calcolo_dict[c]['Importo rata'] != 0:
+                    calcolo_dict[c]['df']['N_QUOTE'].iloc[r] = calcolo_dict[c]['df']['RATA'].iloc[r] / calcolo_dict[c]['df']['QUOTA'].iloc[r] + calcolo_dict[c]['df']['N_QUOTE'].iloc[r-1] - calcolo_dict[c]['df']['CONSOLIDA_LORDA'].iloc[r-1] / calcolo_dict[c]['df']['QUOTA'].iloc[r-1]
+                else:
+                    calcolo_dict[c]['df']['N_QUOTE'].iloc[r] = 0
+
+
+
+        # PMC
+                if calcolo_dict[c]['Importo rata'] != 0:
+                    calcolo_dict[c]['df']['PMC'].iloc[r] = ( calcolo_dict[c]['df']['PMC'].iloc[r-1] * ( calcolo_dict[c]['df']['N_QUOTE'].iloc[r-1] - calcolo_dict[c]['df']['CONSOLIDA_LORDA'].iloc[r-1] / calcolo_dict[c]['df']['QUOTA'].iloc[r-1] ) + calcolo_dict[c]['df']['RATA'].iloc[r] ) /  calcolo_dict[c]['df']['N_QUOTE'].iloc[r]              
+                else:
+                    calcolo_dict[c]['df']['PMC'].iloc[r] = 0    
+
+
+        # CVT_AZIONARIO
+                if calcolo_dict[c]['Importo rata'] != 0:
+                    calcolo_dict[c]['df']['CTV_AZIONARIO'].iloc[r] = calcolo_dict[c]['df']['CTV_AZIONARIO'].iloc[r-1] * calcolo_dict[c]['df']['QUOTA'].iloc[r] / calcolo_dict[c]['df']['QUOTA'].iloc[r-1] + calcolo_dict[c]['df']['RATA'].iloc[r] - calcolo_dict[c]['df']['CONSOLIDA_LORDA'].iloc[r-1]
+                    
+                else:
+                    calcolo_dict[c]['df']['CTV_AZIONARIO'].iloc[r] = 0
+
+            
+        # DEN_CONSOLIDA
+                if (calcolo_dict[c]['df']['CONSOLIDA_EFF'].iloc[r-1] == 0) & (calcolo_dict[c]['df']['CONSOLIDA_LORDA'].iloc[r-1] == 0):
+                    calcolo_dict[c]['df']['DEN_CONSOLIDA'].iloc[r] = calcolo_dict[c]['df']['PMC'].iloc[r]
+                    
+                elif (calcolo_dict[c]['df']['CONSOLIDA_EFF'].iloc[r-1] > 0) & (calcolo_dict[c]['df']['CONSOLIDA_LORDA'].iloc[r-1] > 0):
+                    calcolo_dict[c]['df']['DEN_CONSOLIDA'].iloc[r] = calcolo_dict[c]['df']['QUOTA'].iloc[r-1]
+                    
+                else:
+                    calcolo_dict[c]['df']['DEN_CONSOLIDA'].iloc[r] = calcolo_dict[c]['df']['DEN_CONSOLIDA'].iloc[r-1]
+
+                
+        #CONSOLIDA_LORDA
+                if calcolo_dict[c]['df'].index[r] <=  start_date + relativedelta(months= + durata_months):
+                    if (calcolo_dict[c]['df']['QUOTA'].iloc[r] / calcolo_dict[c]['df']['DEN_CONSOLIDA'].iloc[r] -1) > calcolo_dict[c]['Soglia_step_out']:
+                        calcolo_dict[c]['df']['CONSOLIDA_LORDA'].iloc[r] = (calcolo_dict[c]['df']['QUOTA'].iloc[r] - calcolo_dict[c]['df']['DEN_CONSOLIDA'].iloc[r]) * calcolo_dict[c]['df']['N_QUOTE'].iloc[r]
+                    else:
+                        calcolo_dict[c]['df']['CONSOLIDA_LORDA'].iloc[r] = 0
+                else:
+                    calcolo_dict[c]['df']['CONSOLIDA_LORDA'].iloc[r] = 0
+                    
+                    
+        #CONSOLIDA_NETTA
+                if calcolo_dict[c]['df']['CONSOLIDA_LORDA'].iloc[r] == 0:
+                    calcolo_dict[c]['df']['CONSOLIDA_NETTA'].iloc[r] = 0
+                    
+                elif calcolo_dict[c]['df']['CONSOLIDA_LORDA'].iloc[r] * 0.001 <= 2.58:
+                    calcolo_dict[c]['df']['CONSOLIDA_NETTA'].iloc[r] = calcolo_dict[c]['df']['CONSOLIDA_LORDA'].iloc[r] - 2.58
+                
+                elif calcolo_dict[c]['df']['CONSOLIDA_LORDA'].iloc[r] * 0.001 > 103.29:
+                    calcolo_dict[c]['df']['CONSOLIDA_NETTA'].iloc[r] = calcolo_dict[c]['df']['CONSOLIDA_LORDA'].iloc[r] - 103.29
+                else:
+                    calcolo_dict[c]['df']['CONSOLIDA_NETTA'].iloc[r] = calcolo_dict[c]['df']['CONSOLIDA_LORDA'].iloc[r] * 0.999
+                
+        #CONSOLIDA_EFF
+                calcolo_dict[c]['df']['CONSOLIDA_EFF'].iloc[r] = sum(calcolo_dict[c]['df']['CONSOLIDA_NETTA'].iloc[:r+1])
+                 
+        #TOTALI
+                calcolo_dict['TOTALI']['CTV Fondi'].iloc[r] =  calcolo_dict[selected_funds[0]]['df']['CTV_AZIONARIO'].iloc[r] + calcolo_dict[selected_funds[1]]['df']['CTV_AZIONARIO'].iloc[r] + calcolo_dict[selected_funds[2]]['df']['CTV_AZIONARIO'].iloc[r]
+                calcolo_dict['TOTALI']['Tot Rata ' + c].iloc[r] = - calcolo_dict[c]['df']['RATA'].iloc[r] - calcolo_dict[c]['1.54']       
+        #%%
+        calcolo_dict['TOT Fondo liquidità'] = calcolo_dict[selected_funds[0]]['Fondo liquidità'].shift(-1)
+        calcolo_dict['TOT Fondo liquidità'].iloc[-1] = calcolo_dict[selected_funds[2]]['Fondo liquidità'].iloc[-1][0] + calcolo_dict['TOTALI']['Tot Rata ' + selected_funds[2]].iloc[-1] + calcolo_dict[selected_funds[2]]['df']['CONSOLIDA_NETTA'].iloc[-1]
+                
+
+        #%%
+        for r in dati_calcolo.index:
+           
+            calcolo_dict['Fondi Azionari']['Flussi Step-In'].loc[r] = sum(calcolo_dict['TOTALI'][calcolo_dict['TOTALI'].columns[1:]].loc[r])
+            calcolo_dict['Fondi Azionari']['Flussi Step-Out'].loc[r] = sum([calcolo_dict[c]['df']['CONSOLIDA_NETTA'].loc[r] for c in selected_funds])   
+            calcolo_dict['Fondi Azionari']['MBB Euro Fixed Income'].loc[r] = calcolo_dict['TOT Fondo liquidità']['Liquidità'].loc[r]
+            
+            if calcolo_dict[selected_funds[0]]['df']['CTV_AZIONARIO'].loc[r] > 0:
+                calcolo_dict['Fondi Azionari']['Fondi Azionari'].loc[r] = calcolo_dict['TOTALI']['CTV Fondi'].loc[r] - calcolo_dict['Fondi Azionari']['Flussi Step-Out'].loc[r]
+                
+            if calcolo_dict['Fondi Azionari']['Fondi Azionari'].loc[r] > 0:
+                if r == calcolo_dict['TOTALI'].index[0]:
+                    calcolo_dict['Fondi Azionari']['CTV Totale'].loc[r] = importo
+                else:
+                    calcolo_dict['Fondi Azionari']['CTV Totale'].loc[r] =  calcolo_dict['Fondi Azionari']['Fondi Azionari'].loc[r] + calcolo_dict['Fondi Azionari']['MBB Euro Fixed Income'].loc[r] 
+                    
+            if calcolo_dict['Fondi Azionari']['Fondi Azionari'].loc[r] > 0:
+                if r <=  start_date + relativedelta(months= + durata_months): 
+                   calcolo_dict['Fondi Azionari']['Rata Base'].loc[r] = - importo_rata_tot 
+
+        #%% CALCOLO PIC
+        
+        calcolo_dict['PIC'] = pd.DataFrame(index=dati_calcolo.index, columns =['PIC','PIC_ret', 'ret_'+selected_funds[0], 'ret_'+selected_funds[1], 'ret_'+selected_funds[2], 'INV_'+selected_funds[0], 'INV_'+selected_funds[1], 'INV_'+selected_funds[2]])
+        calcolo_dict['PIC']['PIC'].iloc[0] = importo
+        
+        for c in selected_funds:
+            calcolo_dict['PIC'][c] = calcolo_dict[c]['df']['QUOTA']
+            calcolo_dict['PIC']['INV_'+c].iloc[0] = importo * calcolo_dict[c]['Ripartizione']
+            
+        calcolo_dict['PIC']['PIC_ret'] = calcolo_dict['PIC']['ret_'+selected_funds[0]] * calcolo_dict[selected_funds[1]]['Ripartizione'] + calcolo_dict['PIC']['ret_'+selected_funds[1]] * calcolo_dict[selected_funds[1]]['Ripartizione'] + calcolo_dict['PIC']['ret_'+selected_funds[2]] * calcolo_dict[selected_funds[2]]['Ripartizione']
+        
+        for t in range(1,len(calcolo_dict['PIC'])): 
+            for c in selected_funds:
+                calcolo_dict['PIC']['INV_'+c].iloc[t] = calcolo_dict['PIC']['INV_'+c].iloc[t-1] * (calcolo_dict['PIC'][c].iloc[t] / calcolo_dict['PIC'][c].iloc[t-1] )
+            
+            calcolo_dict['PIC']['PIC'].iloc[t] = calcolo_dict['PIC']['INV_'+selected_funds[0]].iloc[t] + calcolo_dict['PIC']['INV_'+selected_funds[1]].iloc[t] + calcolo_dict['PIC']['INV_'+selected_funds[2]].iloc[t]
+        
+        calcolo_dict['PIC'] = calcolo_dict['PIC'].apply(pd.to_numeric)
+        #%% STATISTICHE IIS e PIC
+        calcolo_dict['performance'] = {}
+        calcolo_dict['volatilità'] = {}
+        calcolo_dict['maxdd'] = {}
+        calcolo_dict['step_in'] = {}
+        calcolo_dict['step_out'] = {}
+
+        calcolo_dict['step_out']['numero attivationi'] = 0
+
+        calcolo_dict['step_in']['numero attivazioni x2'] = 0 
+        calcolo_dict['step_in']['numero attivazioni x3'] = 0 
+        calcolo_dict['step_in']['numero attivazioni x4'] = 0 
+        calcolo_dict['step_in']['numero attivazioni x5'] = 0 
+
+        for c in selected_funds: 
+            calcolo_dict['step_out']['numero attivationi'] += len(calcolo_dict[c]['df']['CONSOLIDA_NETTA'].replace(0,np.nan).dropna())
+            
+            calcolo_dict['step_in']['numero attivazioni x2'] += len(calcolo_dict[c]['df']['RADDOPPIA_RATA'][calcolo_dict[c]['df']['RADDOPPIA_RATA'] == 2].replace(0,np.nan).dropna())
+            calcolo_dict['step_in']['numero attivazioni x3'] += len(calcolo_dict[c]['df']['RADDOPPIA_RATA'][calcolo_dict[c]['df']['RADDOPPIA_RATA'] == 3].replace(0,np.nan).dropna())
+            calcolo_dict['step_in']['numero attivazioni x4'] += len(calcolo_dict[c]['df']['RADDOPPIA_RATA'][calcolo_dict[c]['df']['RADDOPPIA_RATA'] == 4].replace(0,np.nan).dropna())
+            calcolo_dict['step_in']['numero attivazioni x5'] += len(calcolo_dict[c]['df']['RADDOPPIA_RATA'][calcolo_dict[c]['df']['RADDOPPIA_RATA'] == 5].replace(0,np.nan).dropna())
+
+        calcolo_dict['step_in']['numero attivazioni tot'] = calcolo_dict['step_in']['numero attivazioni x2'] + calcolo_dict['step_in']['numero attivazioni x3'] + calcolo_dict['step_in']['numero attivazioni x4'] + calcolo_dict['step_in']['numero attivazioni x5']
+
+            
+        #PERFORMANCE
+        calcolo_dict['performance']['IIS'] = (calcolo_dict['Fondi Azionari']['CTV Totale'].iloc[-1] / calcolo_dict['Fondi Azionari']['CTV Totale'].iloc[0]) -1
+        calcolo_dict['performance']['PIC'] = (calcolo_dict['PIC']['PIC'].iloc[-1] / calcolo_dict['PIC']['PIC'].iloc[0]) -1
+        calcolo_dict['performance']['effetto strategia'] = calcolo_dict['performance']['IIS'] - calcolo_dict['performance']['PIC']
+        calcolo_dict['performance']['Prezzo iniziale'] = None
+        calcolo_dict['performance']['Prezzo finale'] = None
+        calcolo_dict['performance']['Prezzo medio'] = None
+        calcolo_dict['performance']['Rimbalzo per parità IIS'] = 0 if (calcolo_dict['performance']['IIS'] > 0) else (1/(1+calcolo_dict['performance']['IIS'])-1)
+        calcolo_dict['performance']['Rimbalzo per parità PIC'] = 0 if (calcolo_dict['performance']['PIC'] > 0) else (1/(1+calcolo_dict['performance']['PIC'])-1)
+            
+        #VOLATILITà
+        calcolo_dict['volatilità']['IIS'] = np.std(calcolo_dict['Fondi Azionari']['CTV Totale'].pct_change(), ddof=1) * np.sqrt(12) #volatilità annualizzata
+        calcolo_dict['volatilità']['PIC'] = np.std(calcolo_dict['PIC']['PIC'].pct_change(), ddof=1) * np.sqrt(12) #volatilità annualizzata
+        calcolo_dict['volatilità']['effetto strategia'] = calcolo_dict['volatilità']['IIS'] - calcolo_dict['volatilità']['PIC']
+
+        #MAX_DD
+        calcolo_dict['maxdd']['IIS'] = (min(calcolo_dict['Fondi Azionari']['CTV Totale']) / calcolo_dict['Fondi Azionari']['CTV Totale'].iloc[0]) -1 #ddof=1 fa si che la volatilità sia del campione e replichi la funzione excel
+        calcolo_dict['maxdd']['PIC'] = (min(calcolo_dict['PIC']['PIC']) / calcolo_dict['PIC']['PIC'].iloc[0]) -1 #ddof=1 fa si che la volatilità sia del campione e replichi la funzione excel
+        calcolo_dict['maxdd']['effetto strategia'] =  calcolo_dict['maxdd']['IIS'] - calcolo_dict['maxdd']['PIC']
+
+        #%%creo dataframes da usare per riempire tabelle nella dashboard
+        
+        #TABELLA PERFORMANCE
+        performance = pd.DataFrame(index=[0], columns = ['Performance','IIS','PIC','Effetto Strategia','Prezzo Iniziale','Prezzo Finale','Prezzo Medio','Rimbalzo per parità IIS','Rimbalzo per parità PIC'])
+        performance['Performance'] = 'IIS'
+        performance['IIS']= "{:.1f}%".format(round(calcolo_dict['performance']['IIS'],4)*100)
+        performance['PIC']= "{:.1f}%".format(round(calcolo_dict['performance']['PIC'],4)*100)
+        performance['Effetto Strategia']= "{:.1f}%".format(round(calcolo_dict['performance']['effetto strategia'],4)*100)
+        performance['Prezzo Iniziale']=calcolo_dict['performance']['Prezzo iniziale']
+        performance['Prezzo Finale']=calcolo_dict['performance']['Prezzo finale']
+        performance['Prezzo Medio']=calcolo_dict['performance']['Prezzo medio']
+        performance['Rimbalzo per parità IIS']= "{:.1f}%".format(round(calcolo_dict['performance']['Rimbalzo per parità IIS'],4)*100)
+        performance['Rimbalzo per parità PIC']= "{:.1f}%".format(round(calcolo_dict['performance']['Rimbalzo per parità PIC'],4)*100)
+
+        
+        #TABELLA VOLATILITA
+        volatilita = pd.DataFrame(index=[0], columns = ['Volatilità','IIS','PIC','Effetto Strategia'])
+        volatilita['Volatilità']= 'IIS'
+        volatilita['IIS']= "{:.1f}%".format(round(calcolo_dict['volatilità']['IIS'],4)*100)
+        volatilita['PIC']= "{:.1f}%".format(round(calcolo_dict['volatilità']['PIC'],4)*100)
+        volatilita['Effetto Strategia']= "{:.1f}%".format(round(calcolo_dict['volatilità']['effetto strategia'],4)*100)
+
+
+        
+        #TABELLA MAX DD
+        max_dd = pd.DataFrame(index=[0], columns = ['Max Draw-Down','IIS','PIC','Effetto Strategia'])
+        max_dd['Max Draw-Down']= 'IIS'
+        max_dd['IIS']= "{:.1f}%".format(round(calcolo_dict['maxdd']['IIS'],4)*100)
+        max_dd['PIC']= "{:.1f}%".format(round(calcolo_dict['maxdd']['PIC'],4)*100)
+        max_dd['Effetto Strategia']= "{:.1f}%".format(round(calcolo_dict['maxdd']['effetto strategia'],4)*100)
+
+        #TABELLA STEP IN
+        step_in = pd.DataFrame(index=[0,1,2,3,4], columns=['Step - In', 'Conteggio'])
+        step_in['Step - In'].iloc[0] = 'Numero Attivazione Step - In x 2'
+        step_in['Step - In'].iloc[1] = 'Numero Attivazione Step - In x 3'
+        step_in['Step - In'].iloc[2] = 'Numero Attivazione Step - In x 4'
+        step_in['Step - In'].iloc[3] = 'Numero Attivazione Step - In x 5'
+        step_in['Step - In'].iloc[4] = 'Totale'
+        step_in['Conteggio'].iloc[0] = calcolo_dict['step_in']['numero attivazioni x2']
+        step_in['Conteggio'].iloc[1] = calcolo_dict['step_in']['numero attivazioni x3']
+        step_in['Conteggio'].iloc[2] = calcolo_dict['step_in']['numero attivazioni x4']
+        step_in['Conteggio'].iloc[3] = calcolo_dict['step_in']['numero attivazioni x5']
+        step_in['Conteggio'].iloc[4] = calcolo_dict['step_in']['numero attivazioni tot']
+
+
+        #TABELLA STEP OUT
+        step_out = pd.DataFrame(index=[0], columns=['Step - Out', 'Conteggio'])
+        step_out['Step - Out'] ='Numero Attivazione Step - Out'
+        step_out['Conteggio'] = calcolo_dict['step_out']['numero attivationi']
+
+        #%% PREZZO MEDIO
+        
+        for c in selected_funds:
+            calcolo_dict[c]['df']['PREZZO_MEDIO'] = np.nan
+            
+            for r in range(len(calcolo_dict[c]['df'])):
+                calcolo_dict[c]['df']['PREZZO_MEDIO'].iloc[r] = calcolo_dict[c]['df']['QUOTA'].iloc[:r+1].mean()
+    #%% PLOT  
+        #GRAFICO IIS
+        data_last = dati_calcolo.index[-1].strftime('%d/%m/%Y')
+        iis_graph = go.Figure()
+        iis_graph.add_trace(go.Scatter(x=dati_calcolo.index, y=calcolo_dict['Fondi Azionari']['CTV Totale'], mode='lines', name='CTV Totale', line=dict(color='olivedrab')))
+        iis_graph.add_trace(go.Scatter(x=dati_calcolo.index, y=calcolo_dict['PIC']['PIC'], mode='lines', name='PIC', line=dict(color='purple')))
+        iis_graph.add_trace(go.Scatter(x=dati_calcolo.index, y=calcolo_dict['Fondi Azionari']['MBB Euro Fixed Income'], mode='lines', name='Fondo Liquidità', line=dict(color='orange')))
+        iis_graph.add_trace(go.Scatter(x=dati_calcolo.index, y=calcolo_dict['Fondi Azionari']['Fondi Azionari'], mode='lines', name='Fondi Azionari', line=dict(color='lightskyblue')))
+        iis_graph.update_layout(legend=dict(orientation="h", yanchor="top", y=1.04, xanchor="center", x=0.15), title={'text':f'Simulazione IIS vs PIC dal {chosen_date} al {data_last}', 'font':{'size': 24}, 'x': 0.5,'y': 0.95, 'xanchor': 'center','yanchor': 'top'},
+                                plot_bgcolor='white',xaxis=dict(showgrid=False),yaxis=dict(showgrid=True, gridcolor='lightgrey', gridwidth=1, tickwidth=2)
+                                ) 
+         
+        #GRAFICO STEPIN/STEPOUT         
+        hist = go.Figure()
+        hist.add_trace(go.Bar(x=dati_calcolo.index, y=calcolo_dict['Fondi Azionari']['Flussi Step-Out'], name='Flussi Step-Out', marker=dict(color='gold')))
+        hist.add_trace(go.Bar(x=dati_calcolo.index, y=calcolo_dict['Fondi Azionari']['Flussi Step-In'], name='Flussi Step-In', marker=dict(color='lightskyblue')))
+        hist.add_trace(go.Bar(x=dati_calcolo.index, y=calcolo_dict['Fondi Azionari']['Rata Base'], name='Rata Base', marker=dict(color='blue')))       
+        hist.update_layout(legend=dict(orientation="h", y =-0.15),             
+                           plot_bgcolor='white',xaxis=dict(showgrid=True, gridcolor='lightgrey', gridwidth=1, tickwidth=2),
+                           yaxis=dict(showgrid=False),margin=dict(l=0, r=0, t=0, b=50))
+
+        #TABELLE STATISTICHE
+        perf = performance.to_dict('records')
+        vol = volatilita.to_dict('records')
+        maxdd = max_dd.to_dict('records')
+        stepin = step_in.to_dict('records')
+        stepout = step_out.to_dict('records')
+        
+        #GRAFICI PMC
+        pmc_1 = go.Figure()
+        pmc_1.add_trace(go.Scatter(x=dati_calcolo.index, y=calcolo_dict[selected_funds[0]]['df']['PMC'], mode='lines', name='PMC', line=dict(color='orange')))
+        pmc_1.add_trace(go.Scatter(x=dati_calcolo.index, y=calcolo_dict[selected_funds[0]]['df']['QUOTA'], mode='lines', name='Prezzo', line=dict(color='lightskyblue')))
+        pmc_1.add_trace(go.Scatter(x=dati_calcolo.index, y=calcolo_dict[selected_funds[0]]['df']['PREZZO_MEDIO'], mode='lines', name='Prezzo Medio', line=dict(color='olivedrab')))
+        pmc_1.update_layout(legend=dict(orientation="h", y =-0.1), title=f'{fondo1}', autosize=True, margin=dict(l=50, r=50, t=50, b=50), titlefont=dict(size=12), plot_bgcolor='white',xaxis=dict(showgrid=False),yaxis=dict(showgrid=True, gridcolor='lightgrey', gridwidth=1, tickwidth=2)) 
+        
+        pmc_2 = go.Figure()
+        pmc_2.add_trace(go.Scatter(x=dati_calcolo.index, y=calcolo_dict[selected_funds[1]]['df']['PMC'], mode='lines', name='PMC', line=dict(color='orange')))
+        pmc_2.add_trace(go.Scatter(x=dati_calcolo.index, y=calcolo_dict[selected_funds[1]]['df']['QUOTA'], mode='lines', name='Prezzo', line=dict(color='lightskyblue')))
+        pmc_2.add_trace(go.Scatter(x=dati_calcolo.index, y=calcolo_dict[selected_funds[1]]['df']['PREZZO_MEDIO'], mode='lines', name='Prezzo Medio', line=dict(color='olivedrab')))
+        pmc_2.update_layout(legend=dict(orientation="h", y =-0.1), title=f'{fondo2}', autosize=True, margin=dict(l=50, r=50, t=50, b=50), titlefont=dict(size=12), plot_bgcolor='white',xaxis=dict(showgrid=False),yaxis=dict(showgrid=True, gridcolor='lightgrey', gridwidth=1, tickwidth=2)) 
+
+        pmc_3 = go.Figure()
+        pmc_3.add_trace(go.Scatter(x=dati_calcolo.index, y=calcolo_dict[selected_funds[2]]['df']['PMC'], mode='lines', name='PMC', line=dict(color='orange')))
+        pmc_3.add_trace(go.Scatter(x=dati_calcolo.index, y=calcolo_dict[selected_funds[2]]['df']['QUOTA'], mode='lines', name='Prezzo', line=dict(color='lightskyblue')))
+        pmc_3.add_trace(go.Scatter(x=dati_calcolo.index, y=calcolo_dict[selected_funds[2]]['df']['PREZZO_MEDIO'], mode='lines', name='Prezzo Medio', line=dict(color='olivedrab')))
+        pmc_3.update_layout(legend=dict(orientation="h", y =-0.1), title=f'{fondo3}', autosize=True, margin=dict(l=50, r=50, t=50, b=50), titlefont=dict(size=12), plot_bgcolor='white',xaxis=dict(showgrid=False),yaxis=dict(showgrid=True, gridcolor='lightgrey', gridwidth=1, tickwidth=2)) 
+
+        return iis_graph, hist, perf, vol, maxdd, stepin, stepout, pmc_1, pmc_2, pmc_3
+    else:
+        return {}
     
 # Run the app
 if __name__ == '__main__':
