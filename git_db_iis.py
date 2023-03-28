@@ -64,23 +64,235 @@ app = dash.Dash(__name__)
 server = app.server
 
 # Define app layout
+app = dash.Dash(__name__)
+
+server = app.server
+
+
+# Define app layout
 app.layout = html.Div([
     
     html.Div([
         
         html.H2('Engineered by Monitoraggio & Analisi Prodotti di Investimento', style={'color': 'black', 'font-style': 'italic', 'font-weight': 'normal','font-size': '18px', 'margin-left': '0px','margin-bottom':'20px'})
-
+        # html.Div([
+        #     html.H1('Intelligent Investment Strategy', style={'color': 'blue'}),
+        #     html.H2('Engineered by Monitoraggio & Analisi Prodotti di Investimento', style={'color': 'black', 'font-weight': 'normal', 'font-size': '18px', 'margin-left': '10px'})
+        # ], style={'display': 'flex', 'align-items': 'center'})
     ],style={'margin': 'auto','marginLeft': '200px','display': 'flex', 'align-items': 'flex-end'}),
     
+    html.Table([
+        html.Tr([
+            html.Th('Data Primo Versamento (Fine Mese)', style={'text-align': 'center','backgroundColor': 'royalblue',
+            'color': 'white'}),
+            html.Th('Importo (Min. €30.000)', style={'text-align': 'center','backgroundColor': 'royalblue',
+            'color': 'white'}),
+            html.Th('Durata', style={'text-align': 'center','backgroundColor': 'royalblue',
+            'color': 'white'}),
+            html.Th('Importo Rata Totale', style={'text-align': 'center','backgroundColor': 'royalblue',
+            'color': 'white'}),
+        ], style={'border': '1px solid black'}),
+        
+        html.Tr([
+            html.Td(dcc.Dropdown(
+                id='start_date',
+                options=[{'label': date, 'value': date} for date in dates],
+                value=dates[0]), style={'text-align': 'center','border': '1px solid black'}),
+            html.Td(dcc.Input(
+                id='importo',
+                type='number',
+                min=30000,style={'position': 'sticky', 'top': '0'} ), style={'text-align': 'center','border': '1px solid black'}),
+           html.Td(dcc.RadioItems(
+               id='durata_months',
+               options=[{'label': i, 'value': i} for i in [36, 48, 60]],
+               value=36,
+               style={'display': 'inline-block', 'margin':'0px'} ), style={'text-align': 'center','border': '1px solid black'}),
+           html.Td(html.Div(id='installment-amount', style={'display': 'inline-block'}), style={'text-align': 'center','border': '1px solid black'})
+           
+        ],style={'border': '1px solid black'}),
+        # ],style={'width': '60%', 'table-layout': 'adaptive','marginTop': '50px', 'marginLeft': '100px','border': '1px solid black'}),
+
+        html.Tr([
+            html.Th('Comparto', style={'text-align': 'center','backgroundColor': 'royalblue',
+            'color': 'white'}),
+            html.Th('Ripartizione (0% - 100%)', style={'text-align': 'center','backgroundColor': 'royalblue',
+            'color': 'white'}),
+            html.Th('Soglia Automatic Step-Out', style={'text-align': 'center','backgroundColor': 'royalblue',
+            'color': 'white'}),
+            html.Th('Importo Rata', style={'text-align': 'center','backgroundColor': 'royalblue',
+            'color': 'white'})            
+        ], style={'border': '1px solid black'}),
+        # table rows
+        html.Tr([
+            html.Td(dcc.Dropdown(id='fondo1', options=[{'label': fondo, 'value': fondo} for fondo in nomi]), style={'text-align': 'center','border': '1px solid black'}),
+            
+            html.Td(dcc.Input(id='input1', type='number',min=0), style={'text-align': 'center','border': '1px solid black'}),
+            html.Td(dcc.Dropdown(id='step_out1', options=[
+                                          {'label': '10%', 'value': '10%'},
+                                          {'label': '20%', 'value': '20%'}]), style={'text-align': 'center','border': '1px solid black'}),
+            html.Td(id='rata1', style={'text-align': 'center','border': '1px solid black'})
+
+        ],style={'border': '1px solid black'}),
+        html.Tr([
+            html.Td(dcc.Dropdown(id='fondo2', options=[{'label': fondo, 'value': fondo} for fondo in nomi]), style={'text-align': 'center','border': '1px solid black'}),
+            html.Td(dcc.Input(id='input2', type='number',min=0), style={'text-align': 'center','border': '1px solid black'}),
+            html.Td(dcc.Dropdown(id='step_out2', options=[
+                                          {'label': '10%', 'value': '10%'},
+                                          {'label': '20%', 'value': '20%'}]), style={'text-align': 'center','border': '1px solid black'}),
+            html.Td(id='rata2', style={'text-align': 'center','border': '1px solid black'})
+
+        ]),
+        html.Tr([
+            html.Td(dcc.Dropdown(id='fondo3', options=[{'label': fondo, 'value': fondo} for fondo in nomi]), style={'text-align': 'center','border': '1px solid black'}),
+            html.Td(dcc.Input(id='input3', type='number',min=0), style={'text-align': 'center','border': '1px solid black'}),
+            html.Td(dcc.Dropdown(id='step_out3', options=[
+                                          {'label': '10%', 'value': '10%'},
+                                          {'label': '20%', 'value': '20%'}]), style={'text-align': 'center','border': '1px solid black'}),
+            html.Td(id='rata3', style={'text-align': 'center','border': '1px solid black'})
+
+        ],style={'border': '1px solid black'}),
+    ],style={'width': '60%', 'table-layout': 'adaptive','marginTop': '50px', 'marginLeft': '50px','border': '1px solid black'}),
+     
+    html.Div(id='output',style={'margin': 'auto','marginLeft': '50px'}),
+    
+    
+    html.Div(children=[
+    dcc.Graph(id='grafico_iis', style={'height': '70%', 'width': '100%', 'display': 'block', 'max-width':'2000px'}, config={'displayModeBar': False}),   
+    dcc.Graph(id='istogramma', style={'height': '30%', 'width': '100%', 'display': 'block', 'margin-top': '0px','max-width':'2000px'}, config={'displayModeBar': False})
+    ], style={'height': '1000px'}),           
+    
     html.Div([
-    dcc.Graph(id='table',
-              figure=dict(data=[dict(type='table',
-                                     header=dict(values=list(base_dati_weekly.columns)),
-                                     cells=dict(values=[base_dati_weekly[col] for col in base_dati_weekly.columns]))
-                                 ])
-             )
-])
-])
+        html.Div([                  
+        dash_table.DataTable(
+            id='performance',
+            columns=[{"name": i, "id": i} for i in performance_df],
+            data=performance_df.to_dict('records'),
+            editable=False,
+            style_table={
+                'maxWidth': '10%',
+                'margin': 'auto',
+                'marginLeft': '20px',
+            },
+            style_header={
+                'backgroundColor': 'royalblue',
+                'color': 'white',
+                'fontWeight': 'bold',
+                'text-align': 'center'
+            },
+            style_cell={'textAlign': 'center', 'fontSize':'11px'}
+        )],style={"display": "flex", 'text-align': 'center'}),
+
+        html.Div([                          
+        dash_table.DataTable(
+            id='volatilita',
+            columns=[{"name": i, "id": i} for i in vol_df],
+            data=None,
+            editable=False,
+            style_table={
+                'maxWidth': '10%',
+                'margin': 'auto',
+                'marginLeft': '20px',
+            },
+            style_header={
+                'backgroundColor': 'royalblue',
+                'color': 'white',
+                'fontWeight': 'bold',
+                'text-align': 'center'
+            },
+            style_cell={'textAlign': 'center', 'fontSize':'11px'}
+        )],style={"display": "flex", 'text-align': 'center'}),
+        
+        html.Div([                       
+        dash_table.DataTable(
+            id='max_dd',
+            columns=[{"name": i, "id": i} for i in maxdd_df],
+            data=None,
+            editable=False,
+            style_table={
+                'maxWidth': '10%',
+                'margin': 'auto',
+                'marginLeft': '20px',
+            },
+            style_header={
+                'backgroundColor': 'royalblue',
+                'color': 'white',
+                'fontWeight': 'bold',
+                'text-align': 'center'
+            },
+            style_cell={'textAlign': 'center', 'fontSize':'11px'}
+        ),
+    ],style={"display": "flex", 'text-align': 'center'})
+        
+    ],style={"display": "flex", 'text-align': 'center', 'max-width':'1600px','width':'100%','marginTop':'50px'}
+),
+
+html.Div(
+    [
+        html.Div(
+            [
+                html.Div([
+                    
+                    dash_table.DataTable(
+                        id='step_in',
+                        columns=[{"name": i, "id": i} for i in step_in_df],
+                        data=None,
+                        editable=False,
+                        style_table={
+                            'maxWidth': '10%',
+                            'margin': 'auto',
+                            'marginLeft': '20px',
+                            'marginTop': '20px'  # add margin to the top
+                        },
+                        style_header={
+                            'backgroundColor': 'royalblue',
+                            'color': 'white',
+                            'fontWeight': 'bold',
+                            'text-align': 'center'
+                        },
+                        style_cell={'textAlign': 'center', 'fontSize':'11px'}
+                    )],
+                    className="six columns",
+                    style={"display": "inline-block",'text-align': 'center'}
+                ),
+                html.Div(
+                    dash_table.DataTable(
+                        id='step_out',
+                        columns=[{"name": i, "id": i} for i in step_out_df],
+                        data=None,
+                        editable=False,
+                        style_table={
+                            'maxWidth': '10%',
+                            'margin': 'auto',
+                            'marginLeft': '20px',
+                            'marginTop': '20px',
+                            
+                            # add margin to the top
+                        },
+                        style_header={
+                            'backgroundColor': 'royalblue',
+                            'color': 'white',
+                            'fontWeight': 'bold',
+                            'text-align': 'center'
+                        },
+                        style_cell={'textAlign': 'center', 'fontSize':'11px'}
+                    ),
+                    className="six columns",
+                    style={"display": "inline-block",'text-align': 'center'}
+                ),
+            ],
+            style={"display": "flex", 'text-align': 'center'}
+        )
+    ]
+),
+    
+     
+     html.Div(children=[html.H1("Prezzo vs Prezzo Medio di Carico vs Prezzo Medio", style={"font-size": "16px","text-align": "center"}),
+                        dcc.Graph(id='pmc1', style={'width': '33%','height':'80%', 'display': 'inline-block'},config={'displayModeBar': False}),
+                        dcc.Graph(id='pmc2', style={'width': '33%', 'height':'80%','display': 'inline-block'},config={'displayModeBar': False}),
+                        dcc.Graph(id='pmc3', style={'width': '33%', 'height':'80%','display': 'inline-block'},config={'displayModeBar': False})
+                        ], style={'height': '300px', 'max-width':'2000px'})
+    
+     ])
 
 
 # Run the app
