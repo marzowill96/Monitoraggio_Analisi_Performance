@@ -48,13 +48,7 @@ names = fondi.columns[1:]
 names_dict = dict(zip(fondi[fondi.columns[1:]].iloc[1], fondi.columns[1:]))
 
     
-isin_dict_0 = dict(zip(fondi.columns[1:], fondi[fondi.columns[1:]].iloc[1]))
-
-isin_dict = {}
-for key, value in isin_dict_0.items():
-    new_key = key.replace('Mediolanum Best Brands', 'MBB')
-    new_value = value.replace('Mediolanum Best Brands', 'MBB')
-    isin_dict[new_key] = new_value
+isin_dict = dict(zip(fondi.columns[1:], fondi[fondi.columns[1:]].iloc[1]))
 
 # Define list of dates for dropdown menu
 
