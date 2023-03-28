@@ -46,8 +46,7 @@ names = fondi.columns[1:]
  
   # associo ISIN a Nome Fondo per tutti i fondi
 names_dict = dict(zip(fondi[fondi.columns[1:]].iloc[1], fondi.columns[1:]))
-for key, value in names_dict.items():
-    names_dict[key] = value.replace('Mediolanum Best Brands', 'MBB') 
+
     
 isin_dict_0 = dict(zip(fondi.columns[1:], fondi[fondi.columns[1:]].iloc[1]))
 
