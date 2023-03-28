@@ -19,10 +19,10 @@ import requests
 
 url = 'https://raw.githubusercontent.com/marzowill96/Monitoraggio_Analisi_Performance/main/'
 
-response = requests.get(url+'immagine_iis.png', verify=False)
-pil_image = Image.open(BytesIO(response.content))
+#response = requests.get(url+'immagine_iis.png', verify=False)
+#pil_image = Image.open(BytesIO(response.content))
 
-fondi = pd.read_excel(url)
+fondi = pd.read_excel(url+'dati.xlsx')
 names = fondi.columns[1:]
 
 # associo ISIN a Nome Fondo per tutti i fondi
@@ -80,7 +80,7 @@ server = app.server
 app.layout = html.Div([
     
     html.Div([
-        html.Img(src=pil_image, style={'width': '750px', 'height': '150px'}),
+        #html.Img(src=pil_image, style={'width': '750px', 'height': '150px'}),
         html.H2('Engineered by Monitoraggio & Analisi Prodotti di Investimento', style={'color': 'black', 'font-style': 'italic', 'font-weight': 'normal','font-size': '18px', 'margin-left': '0px','margin-bottom':'20px'})
         # html.Div([
         #     html.H1('Intelligent Investment Strategy', style={'color': 'blue'}),
