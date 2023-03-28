@@ -31,7 +31,7 @@ app.layout = html.Div([
         
         html.H2('Engineered by Monitoraggio & Analisi Prodotti di Investimento', style={'color': 'black', 'font-style': 'italic', 'font-weight': 'normal','font-size': '18px', 'margin-left': '0px','margin-bottom':'20px'})
 
-    ],style={'margin': 'auto','marginLeft': '200px','display': 'flex', 'align-items': 'flex-end'})
+    ],style={'margin': 'auto','marginLeft': '200px','display': 'flex', 'align-items': 'flex-end'}),
     
     html.Div([
     dcc.Graph(id='table',
