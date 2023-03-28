@@ -14,9 +14,13 @@ from dash.dependencies import Input, Output, State
 from dash import dash_table
 import dash_bootstrap_components as dbc
 from PIL import Image
+from io import BytesIO
 
 url = 'https://raw.githubusercontent.com/marzowill96/Monitoraggio_Analisi_Performance/main/'
-pil_image = Image.open(url+'immagine_iis.png')
+
+response = requests.get(url+'immagine_iis.png', verify=False)
+pil_image = Image.open(BytesIO(response.content))
+
 fondi = pd.read_excel(url)
 names = fondi.columns[1:]
 
