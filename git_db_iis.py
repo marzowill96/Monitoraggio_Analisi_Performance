@@ -399,7 +399,7 @@ def calculate_rata(installment_amount, input1, input2, input3):
 
 # Run the app
 if __name__ == '__main__':
-    app.run_server()
+    app.run_server(debug=False)
     
 
 
