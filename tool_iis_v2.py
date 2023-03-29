@@ -113,6 +113,7 @@ app.layout = html.Div([
                id='durata_months',
                options=[{'label': i, 'value': i} for i in [36, 48, 60]],
                value=36,
+               labelStyle={'display': 'inline-block', 'margin-right': '10px'},
                style={'display': 'inline-block', 'margin':'0px'} ), style={'text-align': 'center','border': '1px solid black'}),
            html.Td(html.Div(id='installment-amount', style={'display': 'inline-block'}), style={'text-align': 'center','border': '1px solid black'})
            
