@@ -65,16 +65,33 @@ step_out_df = pd.DataFrame(index=[0], columns=['Step - Out', 'Conteggio'])
 
 
 
-app = dash.Dash(__name__)
-
-server = app.server
-
 # Define app layout
 app = dash.Dash(__name__, routes_pathname_prefix='/Monitoraggio_Analisi_Performance/IIS/', 
                 title ='Tool IIS')
 
 server = app.server
 
+# Add the following line to set the favicon
+app.index_string = '''
+    <!DOCTYPE html>
+    <html>
+        <head>
+            <link rel="shortcut icon" href="/assets/favicon.ico" type="image/x-icon">
+            {%metas%}
+            <title>{%title%}</title>
+            {%favicon%}
+            {%css%}
+        </head>
+        <body>
+            {%app_entry%}
+            <footer>
+                {%config%}
+                {%scripts%}
+                {%renderer%}
+            </footer>
+        </body>
+    </html>
+'''
 
 # Define app layout
 app.layout = html.Div([
