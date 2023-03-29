@@ -22,7 +22,7 @@ url = 'https://raw.githubusercontent.com/marzowill96/Monitoraggio_Analisi_Perfor
 response = requests.get(url+'immagine_iis.png', verify=False)
 pil_image = Image.open(BytesIO(response.content))
 
-fondi = pd.read_excel(url)
+fondi = pd.read_excel(url+'dati.xlsx')
 names = fondi.columns[1:]
 
 # associo ISIN a Nome Fondo per tutti i fondi
