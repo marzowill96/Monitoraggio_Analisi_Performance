@@ -16,7 +16,14 @@ import dash_bootstrap_components as dbc
 from PIL import Image
 from io import BytesIO
 import requests
-
+#%% # Function to convert a numeric value to a percentage string
+def to_percent(x):
+    if isinstance(x, (int, float)):
+        return '{:.2%}'.format(x)
+    else:
+        return x
+    
+    
 url = 'https://raw.githubusercontent.com/marzowill96/Monitoraggio_Analisi_Performance/main/'
 
 response = requests.get(url+'immagine_iis.png', verify=False)
