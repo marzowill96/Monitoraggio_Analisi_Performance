@@ -27,7 +27,25 @@ names = fondi.columns[1:]
 
 # associo ISIN a Nome Fondo per tutti i fondi
 names_dict = dict(zip(fondi[fondi.columns[1:]].iloc[1], fondi.columns[1:]))
-isin_dict = dict(zip(fondi.columns[1:], fondi[fondi.columns[1:]].iloc[1]))
+for key, value in names_dict.items():
+    if 'Mediolanum Best Brands' in value:
+        names_dict[key] = value.replace('Mediolanum Best Brands', 'MBB') 
+    else:
+        names_dict[key] = value
+           
+isin_dict_0 = dict(zip(fondi.columns[1:], fondi[fondi.columns[1:]].iloc[1]))
+isin_dict = {}
+for key, value in isin_dict_0.items():
+    if 'Mediolanum Best Brands' in key:
+        new_key = key.replace('Mediolanum Best Brands', 'MBB')
+    else:
+        new_key = key
+    if 'Mediolanum Best Brands' in value:
+        new_value = value.replace('Mediolanum Best Brands', 'MBB')
+    else:
+        new_value = value
+    isin_dict[new_key] = new_value
+    
 #sistemo dataframe fondi
 
 fondi = fondi.set_index('DEXIA CODE')
@@ -76,7 +94,7 @@ app.index_string = '''
     <!DOCTYPE html>
     <html>
         <head>
-            <link rel="shortcut icon" href="/assets/favicon.ico" type="image/x-icon">
+            <link rel="shortcut icon" href="https://raw.githubusercontent.com/marzowill96/Monitoraggio_Analisi_Performance/main/assets/favicon.ico" type="image/x-icon">
             {%metas%}
             <title>{%title%}</title>
             {%favicon%}
@@ -698,12 +716,15 @@ def motore(start_date, importo, durata_months, fondo1, fondo2, fondo3, input1, i
             calcolo_dict['PIC']['PIC'].iloc[t] = calcolo_dict['PIC']['INV_'+selected_funds[0]].iloc[t] + calcolo_dict['PIC']['INV_'+selected_funds[1]].iloc[t] + calcolo_dict['PIC']['INV_'+selected_funds[2]].iloc[t]
         
         calcolo_dict['PIC'] = calcolo_dict['PIC'].apply(pd.to_numeric)
-        #%% STATISTICHE IIS e PIC
-        calcolo_dict['performance'] = {}
-        calcolo_dict['volatilità'] = {}
-        calcolo_dict['maxdd'] = {}
+        
+#%% STATISTICHE IIS e PIC
+        calcolo_dict['performance'] = pd.DataFrame(columns=['Performance','IIS','PIC','Effetto Strategia','Prezzo Iniziale','Prezzo Finale','Prezzo Medio','Rimbalzo per parità IIS','Rimbalzo per parità PIC'], index=['IIS', selected_funds[0], selected_funds[1], selected_funds[2]])
+        calcolo_dict['volatilità'] = pd.DataFrame(columns=['Volatilità','IIS','PIC','Effetto Strategia'], index=['IIS', selected_funds[0], selected_funds[1], selected_funds[2]])
+        calcolo_dict['maxdd'] = pd.DataFrame(columns=['Max Draw-Down','IIS','PIC','Effetto Strategia'], index=['IIS', selected_funds[0], selected_funds[1], selected_funds[2]])
         calcolo_dict['step_in'] = {}
         calcolo_dict['step_out'] = {}
+        calcolo_dict['ctv fondi'] = pd.DataFrame(index=dati_calcolo.index, columns=selected_funds)
+        calcolo_dict['calcolo_maxdd'] = pd.DataFrame(index=dati_calcolo.index, columns=selected_funds)
 
         calcolo_dict['step_out']['numero attivationi'] = 0
 
@@ -723,56 +744,97 @@ def motore(start_date, importo, durata_months, fondo1, fondo2, fondo3, input1, i
         calcolo_dict['step_in']['numero attivazioni tot'] = calcolo_dict['step_in']['numero attivazioni x2'] + calcolo_dict['step_in']['numero attivazioni x3'] + calcolo_dict['step_in']['numero attivazioni x4'] + calcolo_dict['step_in']['numero attivazioni x5']
 
             
-        #PERFORMANCE
-        calcolo_dict['performance']['IIS'] = (calcolo_dict['Fondi Azionari']['CTV Totale'].iloc[-1] / calcolo_dict['Fondi Azionari']['CTV Totale'].iloc[0]) -1
-        calcolo_dict['performance']['PIC'] = (calcolo_dict['PIC']['PIC'].iloc[-1] / calcolo_dict['PIC']['PIC'].iloc[0]) -1
-        calcolo_dict['performance']['effetto strategia'] = calcolo_dict['performance']['IIS'] - calcolo_dict['performance']['PIC']
-        calcolo_dict['performance']['Prezzo iniziale'] = None
-        calcolo_dict['performance']['Prezzo finale'] = None
-        calcolo_dict['performance']['Prezzo medio'] = None
-        calcolo_dict['performance']['Rimbalzo per parità IIS'] = 0 if (calcolo_dict['performance']['IIS'] > 0) else (1/(1+calcolo_dict['performance']['IIS'])-1)
-        calcolo_dict['performance']['Rimbalzo per parità PIC'] = 0 if (calcolo_dict['performance']['PIC'] > 0) else (1/(1+calcolo_dict['performance']['PIC'])-1)
+        ########################################################## PERFORMANCE ################################################################
+        calcolo_dict['performance']['Performance'] = calcolo_dict['performance'].index
+
+        calcolo_dict['performance']['IIS'].loc['IIS'] = (calcolo_dict['Fondi Azionari']['CTV Totale'].iloc[-1] / calcolo_dict['Fondi Azionari']['CTV Totale'].iloc[0]) -1
+        calcolo_dict['performance']['PIC'].loc['IIS'] = (calcolo_dict['PIC']['PIC'].iloc[-1] / calcolo_dict['PIC']['PIC'].iloc[0]) -1
+        calcolo_dict['performance']['Effetto Strategia'].loc['IIS'] = calcolo_dict['performance']['IIS'].loc['IIS'] - calcolo_dict['performance']['PIC'].loc['IIS']
+        calcolo_dict['performance']['Prezzo Iniziale'].loc['IIS'] = None
+        calcolo_dict['performance']['Prezzo Finale'].loc['IIS'] = None
+        calcolo_dict['performance']['Prezzo Medio'].loc['IIS'] = None
+        calcolo_dict['performance']['Rimbalzo per parità IIS'].loc['IIS'] = 0 if (calcolo_dict['performance']['IIS'].loc['IIS'] > 0) else (1/(1+calcolo_dict['performance']['IIS'].loc['IIS'])-1)
+        calcolo_dict['performance']['Rimbalzo per parità PIC'].loc['IIS'] = 0 if (calcolo_dict['performance']['PIC'].loc['IIS'] > 0) else (1/(1+calcolo_dict['performance']['PIC'].loc['IIS'])-1)
             
-        #VOLATILITà
-        calcolo_dict['volatilità']['IIS'] = np.std(calcolo_dict['Fondi Azionari']['CTV Totale'].pct_change(), ddof=1) * np.sqrt(12) #volatilità annualizzata
-        calcolo_dict['volatilità']['PIC'] = np.std(calcolo_dict['PIC']['PIC'].pct_change(), ddof=1) * np.sqrt(12) #volatilità annualizzata
-        calcolo_dict['volatilità']['effetto strategia'] = calcolo_dict['volatilità']['IIS'] - calcolo_dict['volatilità']['PIC']
 
-        #MAX_DD
-        calcolo_dict['maxdd']['IIS'] = (min(calcolo_dict['Fondi Azionari']['CTV Totale']) / calcolo_dict['Fondi Azionari']['CTV Totale'].iloc[0]) -1 #ddof=1 fa si che la volatilità sia del campione e replichi la funzione excel
-        calcolo_dict['maxdd']['PIC'] = (min(calcolo_dict['PIC']['PIC']) / calcolo_dict['PIC']['PIC'].iloc[0]) -1 #ddof=1 fa si che la volatilità sia del campione e replichi la funzione excel
-        calcolo_dict['maxdd']['effetto strategia'] =  calcolo_dict['maxdd']['IIS'] - calcolo_dict['maxdd']['PIC']
+        for c in selected_funds:
+            if ripartizione[c] == 0:
+                calcolo_dict['performance'].loc[c] = None  
+            else:
+                
+                calcolo_dict['performance']['IIS'].loc[c] = ( calcolo_dict[c]['df']['QUOTA'].iloc[-1] / calcolo_dict[c]['df']['PMC'].iloc[-1] ) -1
+                calcolo_dict['performance']['PIC'].loc[c] = ( calcolo_dict[c]['df']['QUOTA'].iloc[-1] / calcolo_dict[c]['df']['QUOTA'].iloc[0] ) -1
+                calcolo_dict['performance']['Effetto Strategia'].loc[c] = calcolo_dict['performance']['IIS'].loc[c] - calcolo_dict['performance']['PIC'].loc[c]
+                calcolo_dict['performance']['Prezzo Iniziale'].loc[c] = pd.to_numeric(round(calcolo_dict[c]['df']['QUOTA'].iloc[0],2))
+                calcolo_dict['performance']['Prezzo Finale'].loc[c] = pd.to_numeric(round(calcolo_dict[c]['df']['QUOTA'].iloc[-1],2))
+                calcolo_dict['performance']['Prezzo Medio'].loc[c] = pd.to_numeric(round(calcolo_dict[c]['df']['PMC'].iloc[-1],2))
+                calcolo_dict['performance']['Rimbalzo per parità IIS'].loc[c] = 0 if (calcolo_dict['performance']['IIS'].loc[c] > 0) else (1/(1+calcolo_dict['performance']['IIS'].loc[c])-1)
+                calcolo_dict['performance']['Rimbalzo per parità PIC'].loc[c] = 0 if (calcolo_dict['performance']['PIC'].loc[c] > 0) else (1/(1+calcolo_dict['performance']['PIC'].loc[c])-1)
+                calcolo_dict['performance']['Performance'].loc[c] = names_dict[c]
+                
+        calcolo_dict['performance'] = calcolo_dict['performance'].reset_index(drop=True) 
+               
+        ########################################################## VOLATILITà ##########################################################
+        calcolo_dict['volatilità']['Volatilità'] = calcolo_dict['volatilità'].index
 
+        calcolo_dict['volatilità']['IIS'].loc['IIS'] = np.std(calcolo_dict['Fondi Azionari']['CTV Totale'].pct_change(), ddof=1) * np.sqrt(12) #volatilità annualizzata
+        calcolo_dict['volatilità']['PIC'].loc['IIS'] = np.std(calcolo_dict['PIC']['PIC'].pct_change(), ddof=1) * np.sqrt(12) #volatilità annualizzata
+        calcolo_dict['volatilità']['Effetto Strategia'].loc['IIS'] = calcolo_dict['volatilità']['IIS'].loc['IIS'] - calcolo_dict['volatilità']['PIC'].loc['IIS']
+
+
+        for c in selected_funds:
+            if ripartizione[c] == 0:
+                calcolo_dict['volatilità'].loc[c] = None        
+            else: 
+                
+                for r in range(len(dati_calcolo.index)):
+                    calcolo_dict['ctv fondi'][c].iloc[r] = calcolo_dict[c]['df']['CTV_AZIONARIO'].iloc[r] + importo * ripartizione[c] + sum(calcolo_dict['TOTALI']['Tot Rata ' + c].iloc[:r+1])
+                    
+                
+                calcolo_dict['volatilità']['IIS'].loc[c] = np.std(calcolo_dict['ctv fondi'][c].pct_change(), ddof=1) * np.sqrt(12) #volatilità annualizzata
+                calcolo_dict['volatilità']['PIC'].loc[c] = np.std(calcolo_dict[c]['df']['QUOTA'].pct_change(), ddof=1) * np.sqrt(12) #volatilità annualizzata
+                calcolo_dict['volatilità']['Effetto Strategia'].loc[c] = calcolo_dict['volatilità']['IIS'].loc[c] - calcolo_dict['volatilità']['PIC'].loc[c]
+                calcolo_dict['volatilità']['Volatilità'].loc[c] = names_dict[c]
+                
+        calcolo_dict['volatilità'] = calcolo_dict['volatilità'].reset_index(drop=True)
+
+
+        ########################################################## MAX_DRAW_DOWN ##########################################################
+        calcolo_dict['maxdd']['Max Draw-Down'] = calcolo_dict['maxdd'].index
+
+        calcolo_dict['maxdd']['IIS'].loc['IIS'] = (min(calcolo_dict['Fondi Azionari']['CTV Totale']) / calcolo_dict['Fondi Azionari']['CTV Totale'].iloc[0]) -1 #ddof=1 fa si che la volatilità sia del campione e replichi la funzione excel
+        calcolo_dict['maxdd']['PIC'].loc['IIS'] = (min(calcolo_dict['PIC']['PIC']) / calcolo_dict['PIC']['PIC'].iloc[0]) -1 #ddof=1 fa si che la volatilità sia del campione e replichi la funzione excel
+        calcolo_dict['maxdd']['Effetto Strategia'].loc['IIS'] =  calcolo_dict['maxdd']['IIS'].loc['IIS'] - calcolo_dict['maxdd']['PIC'].loc['IIS']
+
+        for c in selected_funds:
+            if ripartizione[c] == 0:
+                calcolo_dict['maxdd'].loc[c] = None        
+            else: 
+                
+                for r in range(len(dati_calcolo.index)):
+                    calcolo_dict['calcolo_maxdd'][c].iloc[r] = calcolo_dict[c]['df']['CTV_AZIONARIO'].iloc[r] / ( sum(calcolo_dict[c]['df']['RATA'].iloc[:r+1]) - sum(calcolo_dict[c]['df']['CONSOLIDA_LORDA'].iloc[:r+1]) ) -1
+                    
+                
+                calcolo_dict['maxdd']['IIS'].loc[c] = min(calcolo_dict['calcolo_maxdd'][c])
+                calcolo_dict['maxdd']['PIC'].loc[c] = min(calcolo_dict[c]['df']['QUOTA'] / calcolo_dict[c]['df']['QUOTA'].iloc[0] -1)
+                calcolo_dict['maxdd']['Effetto Strategia'].loc[c] = calcolo_dict['maxdd']['IIS'].loc[c] - calcolo_dict['maxdd']['PIC'].loc[c]
+                calcolo_dict['maxdd']['Max Draw-Down'].loc[c] = names_dict[c]
+                
+        calcolo_dict['maxdd'] = calcolo_dict['maxdd'].reset_index(drop=True)
+           
+          
         #%%creo dataframes da usare per riempire tabelle nella dashboard
-        
+
         #TABELLA PERFORMANCE
-        performance = pd.DataFrame(index=[0], columns = ['Performance','IIS','PIC','Effetto Strategia','Prezzo Iniziale','Prezzo Finale','Prezzo Medio','Rimbalzo per parità IIS','Rimbalzo per parità PIC'])
-        performance['Performance'] = 'IIS'
-        performance['IIS']= "{:.1f}%".format(round(calcolo_dict['performance']['IIS'],4)*100)
-        performance['PIC']= "{:.1f}%".format(round(calcolo_dict['performance']['PIC'],4)*100)
-        performance['Effetto Strategia']= "{:.1f}%".format(round(calcolo_dict['performance']['effetto strategia'],4)*100)
-        performance['Prezzo Iniziale']=calcolo_dict['performance']['Prezzo iniziale']
-        performance['Prezzo Finale']=calcolo_dict['performance']['Prezzo finale']
-        performance['Prezzo Medio']=calcolo_dict['performance']['Prezzo medio']
-        performance['Rimbalzo per parità IIS']= "{:.1f}%".format(round(calcolo_dict['performance']['Rimbalzo per parità IIS'],4)*100)
-        performance['Rimbalzo per parità PIC']= "{:.1f}%".format(round(calcolo_dict['performance']['Rimbalzo per parità PIC'],4)*100)
+        calcolo_dict['performance'][['Performance','IIS','PIC','Effetto Strategia','Rimbalzo per parità IIS','Rimbalzo per parità PIC']] = calcolo_dict['performance'][['Performance','IIS','PIC','Effetto Strategia','Rimbalzo per parità IIS','Rimbalzo per parità PIC']].applymap(to_percent)
+        performance = calcolo_dict['performance']
 
-        
         #TABELLA VOLATILITA
-        volatilita = pd.DataFrame(index=[0], columns = ['Volatilità','IIS','PIC','Effetto Strategia'])
-        volatilita['Volatilità']= 'IIS'
-        volatilita['IIS']= "{:.1f}%".format(round(calcolo_dict['volatilità']['IIS'],4)*100)
-        volatilita['PIC']= "{:.1f}%".format(round(calcolo_dict['volatilità']['PIC'],4)*100)
-        volatilita['Effetto Strategia']= "{:.1f}%".format(round(calcolo_dict['volatilità']['effetto strategia'],4)*100)
+        volatilita = calcolo_dict['volatilità'].applymap(to_percent)
 
 
-        
         #TABELLA MAX DD
-        max_dd = pd.DataFrame(index=[0], columns = ['Max Draw-Down','IIS','PIC','Effetto Strategia'])
-        max_dd['Max Draw-Down']= 'IIS'
-        max_dd['IIS']= "{:.1f}%".format(round(calcolo_dict['maxdd']['IIS'],4)*100)
-        max_dd['PIC']= "{:.1f}%".format(round(calcolo_dict['maxdd']['PIC'],4)*100)
-        max_dd['Effetto Strategia']= "{:.1f}%".format(round(calcolo_dict['maxdd']['effetto strategia'],4)*100)
+        max_dd = calcolo_dict['maxdd'].applymap(to_percent)
 
         #TABELLA STEP IN
         step_in = pd.DataFrame(index=[0,1,2,3,4], columns=['Step - In', 'Conteggio'])
@@ -792,7 +854,7 @@ def motore(start_date, importo, durata_months, fondo1, fondo2, fondo3, input1, i
         step_out = pd.DataFrame(index=[0], columns=['Step - Out', 'Conteggio'])
         step_out['Step - Out'] ='Numero Attivazione Step - Out'
         step_out['Conteggio'] = calcolo_dict['step_out']['numero attivationi']
-
+        
         #%% PREZZO MEDIO
         
         for c in selected_funds:
