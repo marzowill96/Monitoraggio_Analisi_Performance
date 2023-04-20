@@ -15,29 +15,47 @@ from dash import dash_table
 from dash import ctx
 import dash_bootstrap_components as dbc
 from PIL import Image
+from io import BytesIO
+import requests
 
-
-# Get the directory containing the script
-directory = r'C:\Users\william.marzo\OneDrive - Banca Mediolanum SPA\Desktop\TOOL IIS'
-
-directory_universi = r'I:\Documenti\File PMC\In Corso\Universi di Dettaglio'
-os.chdir(directory)
-pil_image = Image.open("immagine_iis.png")
-
+    
 #%% # Function to convert a numeric value to a percentage string
 def to_percent(x):
     if isinstance(x, (int, float)):
         return '{:.2%}'.format(x)
     else:
         return x
-#%%
-os.chdir(directory_universi)
-fondi = pd.read_excel('par - universo mif ch&tm altre classi.xlsx', sheet_name= 'Quota Pubbl')
+    
+    
+url = 'https://raw.githubusercontent.com/marzowill96/Monitoraggio_Analisi_Performance/main/'
+
+response = requests.get(url+'immagine_iis.png', verify=False)
+pil_image = Image.open(BytesIO(response.content))
+
+fondi = pd.read_excel(url+'dati.xlsx')
 names = fondi.columns[1:]
 
 # associo ISIN a Nome Fondo per tutti i fondi
 names_dict = dict(zip(fondi[fondi.columns[1:]].iloc[1], fondi.columns[1:]))
-
+for key, value in names_dict.items():
+    if 'Mediolanum Best Brands' in value:
+        names_dict[key] = value.replace('Mediolanum Best Brands', 'MBB') 
+    else:
+        names_dict[key] = value
+           
+isin_dict_0 = dict(zip(fondi.columns[1:], fondi[fondi.columns[1:]].iloc[1]))
+isin_dict = {}
+for key, value in isin_dict_0.items():
+    if 'Mediolanum Best Brands' in key:
+        new_key = key.replace('Mediolanum Best Brands', 'MBB')
+    else:
+        new_key = key
+    if 'Mediolanum Best Brands' in value:
+        new_value = value.replace('Mediolanum Best Brands', 'MBB')
+    else:
+        new_value = value
+    isin_dict[new_key] = new_value
+    
 #sistemo dataframe fondi
 
 fondi = fondi.set_index('DEXIA CODE')
@@ -56,50 +74,8 @@ for t in base_dati_weekly.index:
     for c in   base_dati_weekly.columns:
         base_dati_weekly[c].loc[t] = base_dati[c].loc[base_dati.index[base_dati.index.get_loc(t, method='ffill')]]
 
-base_dati_weekly = base_dati_weekly.apply(pd.to_numeric)  
+base_dati_weekly = base_dati_weekly.apply(pd.to_numeric) 
 
-################## PER PROVAAAAA ##################################
-base_dati_weekly = base_dati_weekly[base_dati_weekly.index <= '21/03/2023']        
- #####################################################################       
- # Get the directory containing the script
-directory = r'C:\Users\william.marzo\OneDrive - Banca Mediolanum SPA\Desktop\TOOL IIS'
- 
-directory_universi = r'I:\Documenti\File PMC\In Corso\Universi di Dettaglio'
- 
- 
-#%%
-os.chdir(directory_universi)
-fondi = pd.read_excel('par - universo mif ch&tm altre classi.xlsx', sheet_name= 'Quota Pubbl')
-names = fondi.columns[1:]
- 
- # associo ISIN a Nome Fondo per tutti i fondi
-names_dict = dict(zip(fondi[fondi.columns[1:]].iloc[1], fondi.columns[1:]))
-for key, value in names_dict.items():
-    if 'Mediolanum Best Brands' in value:
-        names_dict[key] = value.replace('Mediolanum Best Brands', 'MBB') 
-    else:
-        names_dict[key] = value
-
-names_dict['-'] = '-'    
-    
-    
-isin_dict_0 = dict(zip(fondi.columns[1:], fondi[fondi.columns[1:]].iloc[1]))
-
-isin_dict = {}
-for key, value in isin_dict_0.items():
-    if 'Mediolanum Best Brands' in key:
-        new_key = key.replace('Mediolanum Best Brands', 'MBB')
-    else:
-        new_key = key
-    if 'Mediolanum Best Brands' in value:
-        new_value = value.replace('Mediolanum Best Brands', 'MBB')
-    else:
-        new_value = value
-    isin_dict[new_key] = new_value
-
-isin_dict['-'] = '-'
-#%%
-os.chdir(directory)
 
 # Define list of dates for dropdown menu
 
@@ -107,8 +83,6 @@ dates = list(base_dati_weekly.index)
 for t in range(len(dates)):
     dates[t] = dt.strftime(dates[t], "%d/%m/%Y")
     
-
-fondi_necessari = ['-','IE00BYZ2Y955','IE00BYZ2YB75','IE0005380518','IE0032080503','IE00B04KP775','IE00B2NLMT64','IE00B2NLMV86','IE00BCZNHK63','IE0004621052','IE0032082988','IE0030608859']
 nomi = [names_dict[key] for key in fondi_necessari]
 
 performance_df = pd.DataFrame(index=[0], columns = ['Performance','IIS','PIC','Effetto Strategia','Prezzo Iniziale','Prezzo Finale','Prezzo Medio','Rimbalzo per parità IIS','Rimbalzo per parità PIC'])
@@ -120,7 +94,7 @@ stats_df = pd.DataFrame(index = performance_df.index, columns= [[' ','Performanc
 
 #%%
 
-app = dash.Dash(__name__, routes_pathname_prefix='/Monitoraggio_Analisi_Performance/IIS/', 
+app = dash.Dash(__name__, 
                 title ='Tool IIS')
 
 # Add the following line to set the favicon
