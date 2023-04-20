@@ -66,7 +66,7 @@ fondi.columns = fondi.iloc[1]
 fondi = fondi.iloc[2:]
 fondi = fondi.apply(pd.to_numeric)
 
-fondi_necessari = ['-','IE00BYZ2Y955','IE00BYZ2YB75','IE0005380518','IE0032080503','IE00B04KP775','IE00B2NLMT64','IE00B2NLMV86','IE00BCZNHK63','IE0004621052','IE0032082988','IE0030608859']     
+fondi_necessari = ['IE00BYZ2Y955','IE00BYZ2YB75','IE0005380518','IE0032080503','IE00B04KP775','IE00B2NLMT64','IE00B2NLMV86','IE00BCZNHK63','IE0004621052','IE0032082988','IE0030608859']     
 
 base_dati = fondi[fondi_necessari][fondi.index >= '31/12/2019']
 
@@ -85,7 +85,8 @@ base_dati_weekly = base_dati_weekly[base_dati_weekly.index <= '21/03/2023']
 dates = list(base_dati_weekly.index)
 for t in range(len(dates)):
     dates[t] = dt.strftime(dates[t], "%d/%m/%Y")
-    
+
+fondi_necessari = ['-','IE00BYZ2Y955','IE00BYZ2YB75','IE0005380518','IE0032080503','IE00B04KP775','IE00B2NLMT64','IE00B2NLMV86','IE00BCZNHK63','IE0004621052','IE0032082988','IE0030608859']
 nomi = [names_dict[key] for key in fondi_necessari]
 
 performance_df = pd.DataFrame(index=[0], columns = ['Performance','IIS','PIC','Effetto Strategia','Prezzo Iniziale','Prezzo Finale','Prezzo Medio','Rimbalzo per parità IIS','Rimbalzo per parità PIC'])
