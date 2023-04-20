@@ -96,6 +96,7 @@ stats_df = pd.DataFrame(index = performance_df.index, columns= [[' ','Performanc
 
 app = dash.Dash(__name__, 
                 title ='Tool IIS')
+server = app.server
 
 # Add the following line to set the favicon
 
