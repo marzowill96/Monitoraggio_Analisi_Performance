@@ -42,7 +42,8 @@ for key, value in names_dict.items():
         names_dict[key] = value.replace('Mediolanum Best Brands', 'MBB') 
     else:
         names_dict[key] = value
-           
+names_dict['-'] = '-'
+
 isin_dict_0 = dict(zip(fondi.columns[1:], fondi[fondi.columns[1:]].iloc[1]))
 isin_dict = {}
 for key, value in isin_dict_0.items():
@@ -55,7 +56,9 @@ for key, value in isin_dict_0.items():
     else:
         new_value = value
     isin_dict[new_key] = new_value
-    
+
+isin_dict['-'] = '-'
+
 #sistemo dataframe fondi
 
 fondi = fondi.set_index('DEXIA CODE')
@@ -63,7 +66,7 @@ fondi.columns = fondi.iloc[1]
 fondi = fondi.iloc[2:]
 fondi = fondi.apply(pd.to_numeric)
 
-fondi_necessari = ['IE00BYZ2Y955','IE00BYZ2YB75','IE0005380518','IE0032080503','IE00B04KP775','IE00B2NLMT64','IE00B2NLMV86','IE00BCZNHK63','IE0004621052','IE0032082988','IE0030608859']     
+fondi_necessari = ['-','IE00BYZ2Y955','IE00BYZ2YB75','IE0005380518','IE0032080503','IE00B04KP775','IE00B2NLMT64','IE00B2NLMV86','IE00BCZNHK63','IE0004621052','IE0032082988','IE0030608859']     
 
 base_dati = fondi[fondi_necessari][fondi.index >= '31/12/2019']
 
@@ -75,7 +78,7 @@ for t in base_dati_weekly.index:
         base_dati_weekly[c].loc[t] = base_dati[c].loc[base_dati.index[base_dati.index.get_loc(t, method='ffill')]]
 
 base_dati_weekly = base_dati_weekly.apply(pd.to_numeric) 
-
+base_dati_weekly = base_dati_weekly[base_dati_weekly.index <= '21/03/2023'] 
 
 # Define list of dates for dropdown menu
 
