@@ -32,7 +32,6 @@ url = 'https://raw.githubusercontent.com/marzowill96/Monitoraggio_Analisi_Perfor
 response = requests.get(url+'immagine_iis.png', verify=False)
 pil_image = Image.open(BytesIO(response.content))
 
-# I DATI SONO PRESI DALL'UNIVERSO: par - universo mif ch&tm altre classi -> Quota Pubblicata
 fondi = pd.read_excel(url+'dati.xlsx')
 names = fondi.columns[1:]
 
@@ -67,8 +66,7 @@ fondi.columns = fondi.iloc[1]
 fondi = fondi.iloc[2:]
 fondi = fondi.apply(pd.to_numeric)
 
-fondi_necessari = fondi.columns
-#fondi_necessari = ['IE00BYZ2Y955','IE00BYZ2YB75','IE0005380518','IE0032080503','IE00B04KP775','IE00B2NLMT64','IE00B2NLMV86','IE00BCZNHK63','IE0004621052','IE0032082988','IE0030608859']     
+fondi_necessari = ['IE00BYZ2Y955','IE00BYZ2YB75','IE0005380518','IE0032080503','IE00B04KP775','IE00B2NLMT64','IE00B2NLMV86','IE00BCZNHK63','IE0004621052','IE0032082988','IE0030608859']     
 
 base_dati = fondi[fondi_necessari][fondi.index >= '31/12/2019']
 
@@ -97,8 +95,7 @@ dates = list(base_dati_weekly.index)
 for t in range(len(dates)):
     dates[t] = dt.strftime(dates[t], "%d/%m/%Y")
 
-fondi_necessari.insert(0,'-')
-#fondi_necessari = ['-','IE00BYZ2Y955','IE00BYZ2YB75','IE0005380518','IE0032080503','IE00B04KP775','IE00B2NLMT64','IE00B2NLMV86','IE00BCZNHK63','IE0004621052','IE0032082988','IE0030608859']         
+fondi_necessari = ['-','IE00BYZ2Y955','IE00BYZ2YB75','IE0005380518','IE0032080503','IE00B04KP775','IE00B2NLMT64','IE00B2NLMV86','IE00BCZNHK63','IE0004621052','IE0032082988','IE0030608859']         
 nomi = [names_dict[key] for key in fondi_necessari]
 
 performance_df = pd.DataFrame(index=[0], columns = ['Performance','IIS','PIC','Effetto Strategia','Prezzo Iniziale','Prezzo Finale','Prezzo Medio','Rimbalzo per parità IIS','Rimbalzo per parità PIC'])
