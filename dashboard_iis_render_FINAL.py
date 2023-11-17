@@ -67,8 +67,7 @@ fondi.columns = fondi.iloc[1]
 fondi = fondi.iloc[2:]
 fondi = fondi.apply(pd.to_numeric)
 
-fondi_necessari = fondi.columns
-#fondi_necessari = ['IE00BYZ2Y955','IE00BYZ2YB75','IE0005380518','IE0032080503','IE00B04KP775','IE00B2NLMT64','IE00B2NLMV86','IE00BCZNHK63','IE0004621052','IE0032082988','IE0030608859']     
+fondi_necessari = ['IE00BYZ2Y955','IE00BYZ2YB75','IE0005380518','IE0032080503','IE00B04KP775','IE00B2NLMT64','IE00B2NLMV86','IE00BCZNHK63','IE0004621052','IE0032082988','IE0030608859']     
 
 base_dati = fondi[fondi_necessari][fondi.index >= '31/12/2019']
 
@@ -97,8 +96,7 @@ dates = list(base_dati_weekly.index)
 for t in range(len(dates)):
     dates[t] = dt.strftime(dates[t], "%d/%m/%Y")
 
-fondi_necessari.insert(0,'-')
-#fondi_necessari = ['-','IE00BYZ2Y955','IE00BYZ2YB75','IE0005380518','IE0032080503','IE00B04KP775','IE00B2NLMT64','IE00B2NLMV86','IE00BCZNHK63','IE0004621052','IE0032082988','IE0030608859']         
+fondi_necessari = ['-','IE00BYZ2Y955','IE00BYZ2YB75','IE0005380518','IE0032080503','IE00B04KP775','IE00B2NLMT64','IE00B2NLMV86','IE00BCZNHK63','IE0004621052','IE0032082988','IE0030608859']         
 nomi = [names_dict[key] for key in fondi_necessari]
 
 performance_df = pd.DataFrame(index=[0], columns = ['Performance','IIS','PIC','Effetto Strategia','Prezzo Iniziale','Prezzo Finale','Prezzo Medio','Rimbalzo per parità IIS','Rimbalzo per parità PIC'])
@@ -141,7 +139,8 @@ app.index_string = '''
 
 # Define app layout
 app.layout = html.Div([
-    
+  
+    #TITOLO
     html.Div([
         html.Img(src=pil_image, style={'width': '77.39vh', 'height': '15.47vh'}),
         html.H2('Engineered by Monitoraggio & Analisi Prodotti di Investimento', style={'color': 'black', 'font-style': 'italic', 'font-weight': 'normal','font-size': '1.85vh', 'margin-left': '0px','margin-bottom':'20px'})
@@ -151,6 +150,7 @@ app.layout = html.Div([
         # ], style={'display': 'flex', 'align-items': 'center'})
     ],style={'margin': 'auto', 'justify-content': 'center','display': 'flex', 'align-items': 'flex-end'}),
     
+    # TABELLA INPUT
     html.Div([
     html.Table([
         html.Tr([
@@ -230,8 +230,13 @@ app.layout = html.Div([
 
     ], style={'display': 'flex', 'justify-content': 'center', 'margin-top': '10px'}), 
     
+    
+    
+    
+    #MESSAGGIO ROSSO/VERDE SOTTO TABELLA
     html.Div(id='output',style={'margin': 'auto', 'justify-content': 'center','display': 'flex'}),
     
+    # BOTTONI PER FILTRO
     html.Div([
         html.Div([
             html.Button('Look Through Comparto 1', id='btn-nclicks-1', style={'margin-right': '20px', 'fontSize':'0.75vw'}),
@@ -241,12 +246,16 @@ app.layout = html.Div([
         ], style={'display': 'flex', 'justify-content': 'center', 'margin-top': '30px'})
     ]),
     
+    
+    
+    #GRAFICI GROSSI
     html.Div(children=[
     dcc.Graph(id='grafico_iis', style={'height': '70%', 'width': '100%', 'display': 'block'}, config={'displayModeBar': False}),   
     dcc.Graph(id='istogramma', style={'height': '30%', 'width': '100%', 'display': 'block', 'margin-top': '0px'}, config={'displayModeBar': False})
     ], style={'height': '1000px','justify-content': 'center'}),           
     
     
+    #TABELLA RISULTATI
     html.Div([dash_table.DataTable(
             id='stats',
             columns=[
@@ -270,6 +279,7 @@ app.layout = html.Div([
             merge_duplicate_headers=True,
             style_table={                
                 'margin': 'auto',  
+                'width': '80%'  # Puoi modificare questa percentuale per rendere la tabella più stretta o larga
             },
             style_header={
                 'backgroundColor': 'royalblue',
@@ -277,11 +287,16 @@ app.layout = html.Div([
                 'fontWeight': 'bold',
                 'text-align': 'center'
             },
-            style_cell={'textAlign': 'center', 'fontSize':'0.75vw'}
+            style_cell={
+                'textAlign': 'center', 
+                'fontSize':'0.75vw',
+                'padding': '5px',  # Riduci il padding per rendere le celle più strette
+                'whiteSpace': 'normal',  # Consente il ritorno a capo nelle celle
+                'height': 'auto'  # Adatta l'altezza delle celle al contenuto
+            }
         )
-                
-    ],style={'justify-content': 'center','text-align': 'center', 'width':'100%','marginTop':'40px'}
-),
+    
+    ], style={'justify-content': 'center', 'text-align': 'center', 'width': '100%', 'marginTop': '40px'}),
 
 
 
@@ -344,7 +359,7 @@ html.Div(
     ]
 ),
 
-     
+     # 3 GRAFICI PICCOLI
      html.Div(children=[html.H1("Prezzo vs Prezzo Medio di Carico vs Prezzo Medio", style={"font-size": "0.9vw","text-align": "center"}),
                         dcc.Graph(id='pmc1', style={'width': '33%','height':'80%', 'display': 'inline-block'},config={'displayModeBar': False}),
                         dcc.Graph(id='pmc2', style={'width': '33%', 'height':'80%','display': 'inline-block'},config={'displayModeBar': False}),
@@ -961,14 +976,49 @@ def motore(start_date, importo, durata_months, fondo1, fondo2, fondo3, input1, i
                                 plot_bgcolor='white',xaxis=dict(showgrid=False),yaxis=dict(showgrid=True, gridcolor='lightgrey', gridwidth=1, tickwidth=2)
                                 ) 
                     
+        
+        
         #GRAFICO STEPIN/STEPOUT         
+        # Creazione del grafico
         hist = go.Figure()
-        hist.add_trace(go.Bar(x=dati_calcolo.index, y=calcolo_dict['Fondi Azionari']['Flussi Step-Out'], name='Flussi Step-Out', marker=dict(color='gold')))
-        hist.add_trace(go.Bar(x=dati_calcolo.index, y=calcolo_dict['Fondi Azionari']['Flussi Step-In'], name='Flussi Step-In', marker=dict(color='lightskyblue')))
-        hist.add_trace(go.Bar(x=dati_calcolo.index, y=calcolo_dict['Fondi Azionari']['Rata Base'], name='Rata Base', marker=dict(color='blue')))       
-        hist.update_layout(legend=dict(orientation="h", y =-0.15, font=dict(size=15)),             
-                           plot_bgcolor='white',xaxis=dict(showgrid=True, gridcolor='lightgrey', gridwidth=1, tickwidth=2),
-                           yaxis=dict(showgrid=False),margin=dict(l=0, r=0, t=0, b=50))
+        
+        # Traccia per "Flussi Step-In"
+        hist.add_trace(go.Bar(
+            x=dati_calcolo.index,
+            y=calcolo_dict['Fondi Azionari']['Flussi Step-In'], 
+            name='Flussi Step-In', 
+            marker=dict(color='lightskyblue'),
+            offsetgroup=1
+        ))
+        
+        # Traccia per "Flussi Step-Out"
+        hist.add_trace(go.Bar(
+            x=dati_calcolo.index,
+            y=calcolo_dict['Fondi Azionari']['Flussi Step-Out'], 
+            name='Flussi Step-Out', 
+            marker=dict(color='gold'),
+            offsetgroup=1
+        ))
+        
+        # Traccia per "Rata Base"
+        hist.add_trace(go.Bar(
+            x=dati_calcolo.index,
+            y=calcolo_dict['Fondi Azionari']['Rata Base'], 
+            name='Rata Base', 
+            marker=dict(color='blue'),
+            offsetgroup=2
+        ))
+        
+        # Aggiornamento del layout
+        hist.update_layout(
+            barmode='group',
+            legend=dict(orientation="h", y=-0.15, font=dict(size=15)),             
+            plot_bgcolor='white',
+            xaxis=dict(showgrid=True, gridcolor='lightgrey', gridwidth=1, tickwidth=2),
+            yaxis=dict(showgrid=False),
+            margin=dict(l=0, r=0, t=0, b=50)
+        )        
+        
 
 ####################################################### Look through con bottoni #####################################################
         if clicks['1'] == ctx.triggered_id:
@@ -986,12 +1036,36 @@ def motore(start_date, importo, durata_months, fondo1, fondo2, fondo3, input1, i
                                         plot_bgcolor='white',xaxis=dict(showgrid=False),yaxis=dict(showgrid=True, gridcolor='lightgrey', gridwidth=1, tickwidth=2)
                                         ) 
             
+
                 hist = go.Figure()
-                hist.add_trace(go.Bar(x=dati_calcolo.index, y=calcolo_dict[selected_funds[0]]['df']['CONSOLIDA_NETTA'], name='Flussi Step-Out', marker=dict(color='gold')))
-                hist.add_trace(go.Bar(x=dati_calcolo.index, y=calcolo_dict['TOTALI']['Tot Rata ' + selected_funds[0]], name='Flussi Step-In', marker=dict(color='lightskyblue')))
-                hist.update_layout(legend=dict(orientation="h", y =-0.15, font=dict(size=15)),             
-                                   plot_bgcolor='white',xaxis=dict(showgrid=True, gridcolor='lightgrey', gridwidth=1, tickwidth=2),
-                                   yaxis=dict(showgrid=False),margin=dict(l=0, r=0, t=0, b=50))
+                
+                # Traccia per "Flussi Step-Out"
+                hist.add_trace(go.Bar(
+                    x=dati_calcolo.index,
+                    y=calcolo_dict[selected_funds[0]]['df']['CONSOLIDA_NETTA'],
+                    name='Flussi Step-Out',
+                    marker=dict(color='gold'),
+                    offsetgroup=1
+                ))
+                
+                # Traccia per "Flussi Step-In"
+                hist.add_trace(go.Bar(
+                    x=dati_calcolo.index,
+                    y=calcolo_dict['TOTALI']['Tot Rata ' + selected_funds[0]],
+                    name='Flussi Step-In',
+                    marker=dict(color='lightskyblue'),
+                    offsetgroup=1
+                ))
+                
+                hist.update_layout(
+                    legend=dict(orientation="h", y=-0.15, font=dict(size=15)),
+                    plot_bgcolor='white',
+                    xaxis=dict(showgrid=True, gridcolor='lightgrey', gridwidth=1, tickwidth=2),
+                    yaxis=dict(showgrid=False),
+                    margin=dict(l=0, r=0, t=0, b=50)
+                )
+                
+
 
         if clicks['2'] == ctx.triggered_id:
             if selected_funds[1] in ['-','1','2']:
@@ -1008,12 +1082,36 @@ def motore(start_date, importo, durata_months, fondo1, fondo2, fondo3, input1, i
                                         plot_bgcolor='white',xaxis=dict(showgrid=False),yaxis=dict(showgrid=True, gridcolor='lightgrey', gridwidth=1, tickwidth=2)
                                         ) 
                 
+                
                 hist = go.Figure()
-                hist.add_trace(go.Bar(x=dati_calcolo.index, y=calcolo_dict[selected_funds[1]]['df']['CONSOLIDA_NETTA'], name='Flussi Step-Out', marker=dict(color='gold')))
-                hist.add_trace(go.Bar(x=dati_calcolo.index, y=calcolo_dict['TOTALI']['Tot Rata ' + selected_funds[1]], name='Flussi Step-In', marker=dict(color='lightskyblue')))
-                hist.update_layout(legend=dict(orientation="h", y =-0.15, font=dict(size=15)),             
-                                   plot_bgcolor='white',xaxis=dict(showgrid=True, gridcolor='lightgrey', gridwidth=1, tickwidth=2),
-                                   yaxis=dict(showgrid=False),margin=dict(l=0, r=0, t=0, b=50))
+
+                # Traccia per "Flussi Step-Out"
+                hist.add_trace(go.Bar(
+                    x=dati_calcolo.index,
+                    y=calcolo_dict[selected_funds[1]]['df']['CONSOLIDA_NETTA'],
+                    name='Flussi Step-Out',
+                    marker=dict(color='gold'),
+                    offsetgroup=1
+                ))
+                
+                # Traccia per "Flussi Step-In"
+                hist.add_trace(go.Bar(
+                    x=dati_calcolo.index,
+                    y=calcolo_dict['TOTALI']['Tot Rata ' + selected_funds[1]],
+                    name='Flussi Step-In',
+                    marker=dict(color='lightskyblue'),
+                    offsetgroup=1
+                ))
+                
+                hist.update_layout(
+                    legend=dict(orientation="h", y=-0.15, font=dict(size=15)),
+                    plot_bgcolor='white',
+                    xaxis=dict(showgrid=True, gridcolor='lightgrey', gridwidth=1, tickwidth=2),
+                    yaxis=dict(showgrid=False),
+                    margin=dict(l=0, r=0, t=0, b=50)
+                )
+                
+                
         
         if clicks['3'] == ctx.triggered_id:
             if selected_funds[2] in ['-','1','2']:
@@ -1031,11 +1129,32 @@ def motore(start_date, importo, durata_months, fondo1, fondo2, fondo3, input1, i
                                         ) 
                 
                 hist = go.Figure()
-                hist.add_trace(go.Bar(x=dati_calcolo.index, y=calcolo_dict[selected_funds[2]]['df']['CONSOLIDA_NETTA'], name='Flussi Step-Out', marker=dict(color='gold')))
-                hist.add_trace(go.Bar(x=dati_calcolo.index, y=calcolo_dict['TOTALI']['Tot Rata ' + selected_funds[2]], name='Flussi Step-In', marker=dict(color='lightskyblue')))
-                hist.update_layout(legend=dict(orientation="h", y =-0.15, font=dict(size=15)),             
-                                   plot_bgcolor='white',xaxis=dict(showgrid=True, gridcolor='lightgrey', gridwidth=1, tickwidth=2),
-                                   yaxis=dict(showgrid=False),margin=dict(l=0, r=0, t=0, b=50))
+
+                # Traccia per "Flussi Step-Out"
+                hist.add_trace(go.Bar(
+                    x=dati_calcolo.index,
+                    y=calcolo_dict[selected_funds[2]]['df']['CONSOLIDA_NETTA'],
+                    name='Flussi Step-Out',
+                    marker=dict(color='gold'),
+                    offsetgroup=1
+                ))
+                
+                # Traccia per "Flussi Step-In"
+                hist.add_trace(go.Bar(
+                    x=dati_calcolo.index,
+                    y=calcolo_dict['TOTALI']['Tot Rata ' + selected_funds[2]],
+                    name='Flussi Step-In',
+                    marker=dict(color='lightskyblue'),
+                    offsetgroup=1
+                ))
+                
+                hist.update_layout(
+                    legend=dict(orientation="h", y=-0.15, font=dict(size=15)),
+                    plot_bgcolor='white',
+                    xaxis=dict(showgrid=True, gridcolor='lightgrey', gridwidth=1, tickwidth=2),
+                    yaxis=dict(showgrid=False),
+                    margin=dict(l=0, r=0, t=0, b=50)
+                )
 
 ######################################################################################################################################
 
@@ -1064,6 +1183,8 @@ def motore(start_date, importo, durata_months, fondo1, fondo2, fondo3, input1, i
              "mddpic": stats["Max Draw-Down", "PIC"].loc[i],
              "mddstra": stats["Max Draw-Down", "Effetto Strategia"].loc[i],
          }for i in stats.index] 
+        
+        
         #GRAFICI PMC
         
         if calcolo_dict[selected_funds[0]]['Ripartizione'] == 0:
