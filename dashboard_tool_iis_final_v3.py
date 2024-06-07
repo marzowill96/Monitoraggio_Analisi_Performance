@@ -78,7 +78,7 @@ for t in base_dati_weekly.index:
         base_dati_weekly[c].loc[t] = base_dati[c].loc[base_dati.index[base_dati.index.get_loc(t, method='ffill')]]
 
 base_dati_weekly = base_dati_weekly.apply(pd.to_numeric) 
-base_dati_weekly = base_dati_weekly[base_dati_weekly.index <= '21/03/2023'] 
+base_dati_weekly = base_dati_weekly[base_dati_weekly.index <= '31/05/2024'] 
 
 # Define list of dates for dropdown menu
 
